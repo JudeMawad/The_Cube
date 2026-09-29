@@ -1,0 +1,24 @@
+fastapi==0.141.1
+pydantic==2.13.5
+python-multipart==0.0.32
+uvicorn==0.52.4
+httpx==0.28.1
+jsonschema==4.25.1
+referencing==0.37.0
+
+# GPU Whisper
+faster-whisper==1.2.1
+ctranslate2==4.8.2
+nvidia-cublas-cu12
+nvidia-cudnn-cu12==9.*
+
+# GPU Kokoro TTS
+# ORT 1.26 is intentionally pinned for CUDA 12.x + cuDNN 9.
+onnxruntime-gpu[cuda,cudnn]==1.26.0
+numpy>=2.0.2,<3
+espeakng-loader==0.2.4
+phonemizer==3.4.0
+soundfile==0.14.0
+
+# Install Kokoro separately so it does not pull CPU onnxruntime:
+# ai_node/.venv/bin/python -m pip install --no-deps kokoro-onnx==0.6.1

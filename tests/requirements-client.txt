@@ -1,0 +1,5 @@
+# CPU-only client tests; production uses client/requirements.txt.
+httpx==0.28.1
+numpy==2.5.3
+requests==2.34.2
+Pillow==12.3.0

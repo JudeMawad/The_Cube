@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Cube Soloist maintenance reminder
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=15m
+Unit=cube-spotify-age-check.service
+
+[Install]
+WantedBy=timers.target

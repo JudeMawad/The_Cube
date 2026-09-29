@@ -1,0 +1,26 @@
+[Unit]
+Description=Cube Voice Server
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=@CUBE_USER@
+Group=@CUBE_USER@
+WorkingDirectory=@CUBE_REPO@/server
+
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=-@CUBE_HOME@/.config/cube/server.env
+Environment=OPENBLAS_NUM_THREADS=2
+Environment=OMP_NUM_THREADS=2
+
+ExecStart=@CUBE_REPO@/server/.venv/bin/uvicorn server:app --host 0.0.0.0 --port 8765 --log-level info
+
+Restart=always
+RestartSec=3
+
+KillSignal=SIGINT
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

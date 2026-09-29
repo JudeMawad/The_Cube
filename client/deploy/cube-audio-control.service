@@ -1,0 +1,29 @@
+[Unit]
+Description=Cube local music gain and interaction lease recovery
+Wants=user@@CUBE_UID@.service
+After=user@@CUBE_UID@.service cube-audio.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=@CUBE_USER@
+Group=@CUBE_USER@
+WorkingDirectory=@CUBE_REPO@/client/app
+Environment=HOME=@CUBE_HOME@
+Environment=XDG_RUNTIME_DIR=/run/user/@CUBE_UID@
+Environment=PIPEWIRE_REMOTE=pipewire-0
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=@CUBE_REPO@/client/app/.venv/bin/python -m audio.duck_service
+ExecStopPost=@CUBE_REPO@/client/app/.venv/bin/python -m audio.duck_service neutral
+Restart=always
+RestartSec=0.25
+TimeoutStopSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+RestrictAddressFamilies=AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

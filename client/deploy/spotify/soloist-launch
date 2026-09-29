@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+"""Service-only receiver launcher. Never prints credentials or receiver arguments."""
+
+import json
+import os
+from pathlib import Path
+import stat
+import subprocess
+import sys
+
+from soloist_release import DEFAULT_RELEASE, ReleaseError, load_release
+
+
+def private_key_file(info):
+    if (not stat.S_ISREG(info.st_mode) or info.st_uid not in (0, os.getuid())
+            or stat.S_IMODE(info.st_mode) != 0o600 or not 0 < info.st_size <= 8192):
+        raise ReleaseError("Source key must be an owner-only regular file with mode 0600.")
+
+
+def systemd_credential_file(info):
+    # LoadCredential may deliver root:service-group 0440 on Debian/systemd.
+    # Group read is allowed only for this managed copy, never the source key.
+    if (not stat.S_ISREG(info.st_mode) or info.st_uid != 0
+            or stat.S_IMODE(info.st_mode) not in (0o400, 0o440)
+            or not 0 < info.st_size <= 8192):
+        raise ReleaseError("Systemd credential must be a root-owned read-only regular file.")
+
+
+def read_key(path):
+    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(descriptor, "rb") as stream:
+        systemd_credential_file(os.fstat(stream.fileno()))
+        key = stream.read(8193).decode("ascii").rstrip("\r\n")
+    if not key or len(key) > 8192 or any(not 33 <= ord(char) <= 126 for char in key):
+        raise ReleaseError("Invalid credential format.")
+    return key
+
+
+def private_directory(path):
+    path.mkdir(mode=0o700, parents=True, exist_ok=True)
+    info = path.lstat()
+    if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
+        raise ReleaseError("Receiver storage must be owned by the service user with mode 0700.")
+
+
+def managed_release(directory):
+    for path in (directory, *directory.parents, directory / "soloist", directory / "release.json"):
+        info = path.stat()
+        if info.st_uid != 0 or info.st_mode & 0o022:
+            raise ReleaseError("Installed release must be root-owned and not group/world writable.")
+
+
+def music_sink_ready():
+    result = subprocess.run(["/usr/bin/pw-dump"], capture_output=True, text=True, timeout=5)
+    if result.returncode:
+        return False
+    objects = json.loads(result.stdout)
+    sinks = [obj for obj in objects if obj.get("type") == "PipeWire:Interface:Node"
+             and obj.get("info", {}).get("props", {}).get("node.name") == "cube.spotify"]
+    return (len(sinks) == 1
+            and sinks[0]["info"]["props"].get("media.class") == "Audio/Sink")
+
+
+def main():
+    os.umask(0o077)
+    try:
+        directory, _, status = load_release(DEFAULT_RELEASE)
+        managed_release(directory)
+        if status["status"] == "expired":
+            print("Soloist build expired; install a validated replacement.", file=sys.stderr)
+            return 10
+        credential_dir = Path(os.environ["CREDENTIALS_DIRECTORY"])
+        # LoadCredential makes a private copy even if the source was unsafe.
+        # Check the original too so that it cannot silently become public.
+        private_key_file((Path.home() / ".config/cube/spotify/soloist.key").lstat())
+        key = read_key(credential_dir / "soloist.key")
+        data = Path.home() / ".local/share/cube/soloist"
+        cache = Path.home() / ".cache/cube/soloist"
+        private_directory(data)
+        private_directory(cache)
+    except (OSError, ValueError, KeyError):
+        print("Soloist setup invalid; check release, clock, private credential and storage permissions.", file=sys.stderr)
+        return 78
+    try:
+        ready = music_sink_ready()
+    except (OSError, ValueError, TypeError, AttributeError, subprocess.SubprocessError):
+        ready = False
+    if not ready:
+        print("Cube music proof sink unavailable; receiver was not started.", file=sys.stderr)
+        return 75
+    # Key is necessarily visible in the upstream process argv; never log this list.
+    args = [str(directory / "soloist"), "--device-name", "Cube", "--api-key", key,
+            "--data-dir", str(data), "--cache-dir", str(cache), "--cache-size", "256",
+            "--pipewire-device", "cube.spotify", "--ws", "127.0.0.1:0"]
+    try:
+        os.execv(args[0], args)
+    except OSError:
+        print("Could not execute the validated Soloist receiver.", file=sys.stderr)
+        return 78
+
+
+if __name__ == "__main__":
+    sys.exit(main())

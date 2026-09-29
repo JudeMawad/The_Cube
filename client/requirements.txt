@@ -1,0 +1,23 @@
+certifi==2026.7.22
+charset-normalizer==3.5.1
+cloudpickle==3.1.2
+flatbuffers==25.12.19
+idna==3.19
+joblib==1.6.0
+narwhals==2.25.0
+numpy==2.5.3
+onnxruntime==1.29.0
+openwakeword==0.6.0
+packaging==26.3
+pathvalidate==3.3.1
+piper-tts==1.8.0
+protobuf==7.36.1
+requests==2.34.2
+scikit-learn==1.9.0
+scipy==1.18.1
+threadpoolctl==3.6.0
+tqdm==4.70.0
+urllib3==2.7.0
+
+# Async voice requests must close promptly on barge-in.
+httpx==0.28.1

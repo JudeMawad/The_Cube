@@ -1,0 +1,30 @@
+[Unit]
+Description=Cube Voice Client
+Wants=cube-display.service network-online.target user@@CUBE_UID@.service cube-audio.service
+After=cube-display.service network-online.target sound.target user@@CUBE_UID@.service cube-audio.service
+
+[Service]
+Type=simple
+User=@CUBE_USER@
+Group=@CUBE_USER@
+SupplementaryGroups=audio
+WorkingDirectory=@CUBE_REPO@/client/app
+
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=-@CUBE_HOME@/.config/cube/client.env
+Environment=OPENBLAS_NUM_THREADS=2
+Environment=OMP_NUM_THREADS=2
+Environment=XDG_RUNTIME_DIR=/run/user/@CUBE_UID@
+Environment=PIPEWIRE_REMOTE=pipewire-0
+
+ExecStart=@CUBE_REPO@/client/app/.venv/bin/python @CUBE_REPO@/client/app/cube.py
+
+Restart=on-failure
+RestartSec=3
+
+KillMode=control-group
+KillSignal=SIGINT
+TimeoutStopSec=8
+
+[Install]
+WantedBy=multi-user.target

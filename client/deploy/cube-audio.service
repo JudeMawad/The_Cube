@@ -1,0 +1,25 @@
+[Unit]
+Description=Cube independent assistant and Spotify audio buses
+Wants=user@@CUBE_UID@.service cube-audio-control.service
+After=user@@CUBE_UID@.service sound.target
+Conflicts=cube-spotify-audio-proof.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=@CUBE_USER@
+Group=@CUBE_USER@
+Environment=HOME=@CUBE_HOME@
+Environment=XDG_RUNTIME_DIR=/run/user/@CUBE_UID@
+Environment=PIPEWIRE_REMOTE=pipewire-0
+ExecStart=/usr/bin/pipewire -c /opt/cube/soloist/config/cube-audio.conf
+Restart=always
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+RestrictAddressFamilies=AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

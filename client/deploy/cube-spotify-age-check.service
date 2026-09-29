@@ -1,0 +1,14 @@
+[Unit]
+Description=Check Cube Soloist checksum and build expiry (no updates)
+
+[Service]
+Type=oneshot
+User=@CUBE_USER@
+Group=@CUBE_USER@
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 /opt/cube/soloist/tools/check-build-age.py
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateNetwork=true
+ProtectSystem=strict
+ProtectHome=true

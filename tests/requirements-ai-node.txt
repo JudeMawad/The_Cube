@@ -1,0 +1,5 @@
+# Mocked AI-node tests; CPU ONNX imports only, no GPU/model provisioning.
+-r requirements-server.txt
+onnxruntime==1.30.0
+jsonschema==4.25.1
+referencing==0.37.0

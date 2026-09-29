@@ -1,0 +1,4 @@
+# Development-only HTTP contract harness imports both service schemas.
+-r requirements-ai-node.txt
+-r requirements-client.txt
+uvicorn==0.52.4

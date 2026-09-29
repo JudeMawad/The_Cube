@@ -1,0 +1,20 @@
+--- a/lib/rp1/rp1_pio_backend.cc
++++ b/lib/rp1/rp1_pio_backend.cc
+@@ -746,6 +746,17 @@
+   Rp1PioState &state = s_pio_state;
+   if (!state.active) return;
+ 
++  // Cancel queued DMA while the PIO consumer is still running. Disabling
++  // the SM first can leave an AXI DMA burst waiting on its FIFO: the kernel
++  // then reports "failed to stop" and the next renderer blocks in a transfer.
++  // A zero-buffer reconfiguration releases the active transfer buffers;
++  // pio_close() below releases the resulting idle DMA channel.
++  const int rc = pio_sm_config_xfer(state.pio, state.sm, PIO_DIR_TO_SM, 0, 0);
++  if (rc != 0) {
++    fprintf(stderr, "RP1 PIO DMA shutdown failed: %d\n", rc);
++    abort();
++  }
++
+   pio_sm_set_enabled(state.pio, state.sm, false);
+   pio_sm_clear_fifos(state.pio, state.sm);
+   ReleasePinDirection(state.pio, state.sm, state.used_mask);

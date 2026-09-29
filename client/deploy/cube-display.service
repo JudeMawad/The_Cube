@@ -1,0 +1,29 @@
+[Unit]
+Description=Cube Display
+After=local-fs.target
+
+[Service]
+Type=simple
+User=root
+Environment=CUBE_DISPLAY_USER=@CUBE_USER@
+WorkingDirectory=@CUBE_REPO@/client/native/cube-display
+
+ExecStartPre=/usr/bin/sleep 2
+
+ExecStart=@CUBE_REPO@/client/native/cube-display/cube-display \
+  --led-rows=64 \
+  --led-cols=64 \
+  --led-chain=1 \
+  --led-parallel=1 \
+  --led-pixel-mapper=Rotate:-90 \
+  --led-rp1-pio=1 \
+  --led-brightness=50
+
+Restart=on-failure
+RestartSec=2
+
+KillSignal=SIGINT
+TimeoutStopSec=5
+
+[Install]
+WantedBy=multi-user.target

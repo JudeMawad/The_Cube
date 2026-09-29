@@ -1,0 +1,28 @@
+[Unit]
+Description=Cube optional Spotify backend status reporter
+Wants=network-online.target
+After=network-online.target
+ConditionPathExists=@CUBE_HOME@/.config/cube/spotify-web-bridge.env
+
+[Service]
+Type=simple
+User=@CUBE_USER@
+Group=@CUBE_USER@
+WorkingDirectory=@CUBE_REPO@/client/app
+Environment=HOME=@CUBE_HOME@
+Environment=XDG_RUNTIME_DIR=/run/user/@CUBE_UID@
+Environment=PYTHONDONTWRITEBYTECODE=1
+EnvironmentFile=@CUBE_HOME@/.config/cube/spotify-web-bridge.env
+ExecStart=@CUBE_REPO@/client/app/.venv/bin/python -m audio.spotify_reporter
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+// Install manually as root. Never grant arbitrary systemd management privileges.
+polkit.addRule(function(action, subject) {
+    var permitted = [
+        "org.freedesktop.login1.power-off",
+        "org.freedesktop.login1.power-off-multiple-sessions",
+        "org.freedesktop.login1.reboot",
+        "org.freedesktop.login1.reboot-multiple-sessions"
+    ];
+    if (subject.user === "@CUBE_USER@" && subject.system_unit === "cube-voice.service" &&
+            permitted.indexOf(action.id) !== -1) {
+        return polkit.Result.YES;
+    }
+});

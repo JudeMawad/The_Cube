@@ -1,0 +1,8 @@
+{
+  "sku": "YOUR_DEVICE_SKU",
+  "devices": {"spot1": "YOUR_DEVICE_ID"},
+  "all_spots_group": {
+    "sku": "YOUR_GROUP_SKU",
+    "device": "YOUR_GROUP_ID"
+  }
+}

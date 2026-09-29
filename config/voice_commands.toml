@@ -1,0 +1,667 @@
+# CANONICAL VOICE COMMANDS
+# ========================
+# Edit this file, then regenerate the service-local JSON snapshots:
+#   python3 scripts/build_voice_catalog.py
+#
+# Each [[commands]] block defines one existing command.
+# - exact: phrases that must match exactly (after existing normalization).
+# - [[commands.patterns]]: regular expressions used by existing handlers.
+# - examples: documentation for a pattern; NOT additional recognized aliases.
+# - fast_path: a pattern's existing eligibility flag, not a new execution rule.
+#
+# IMPORTANT: Keep pattern expressions and capture groups intact when editing.
+# Adding words to "examples" does NOT teach the Cube a new command.
+# Cube, named-light, and plug controls below work without the AI node.
+# Explicit Spotify controls use the catalog-backed backend music tools.
+
+version = 1
+
+
+# ============================================================
+# SERVER / LIGHTS
+# ============================================================
+
+# --- Turn lights ON ------------------------------------------
+[[commands]]
+service = "server"
+feature = "lights"
+id = "power_on"
+
+[[commands.patterns]]
+label = "complete power-on request"
+mode = "fullmatch"
+fast_path = true
+examples = [
+  "lights on",
+  "turn on the lights",
+]
+regex = '(?:turn|switch)?\s*(?:the\s+)?(?:lights?|bulbs?|spots?)\s+on|(?:turn|switch)\s+on\s+(?:the\s+)?(?:lights?|bulbs?|spots?)'
+
+
+# --- Turn lights OFF -----------------------------------------
+[[commands]]
+service = "server"
+feature = "lights"
+id = "power_off"
+
+[[commands.patterns]]
+label = "complete power-off request"
+mode = "fullmatch"
+fast_path = true
+examples = [
+  "lights off",
+  "turn off the lights",
+]
+regex = '(?:turn|switch)?\s*(?:the\s+)?(?:lights?|bulbs?|spots?)\s+off|(?:turn|switch)\s+off\s+(?:the\s+)?(?:lights?|bulbs?|spots?)'
+
+
+# --- Set light brightness ------------------------------------
+[[commands]]
+service = "server"
+feature = "lights"
+id = "brightness"
+
+# Existing legacy matcher: finds a brightness percentage in longer text.
+[[commands.patterns]]
+label = "legacy brightness extraction"
+mode = "search"
+regex = '(?:lights?|bulbs?|spots?).*?(\d{1,3})\s*(?:%|percent)'
+
+# Existing fast path: matches a complete, unambiguous request.
+[[commands.patterns]]
+label = "complete brightness request"
+mode = "fullmatch"
+fast_path = true
+examples = [
+  "lights 1%",
+  "lights 100 percent",
+]
+regex = '(?:(?:set|make|dim)\s+)?(?:the\s+)?(?:lights?|bulbs?|spots?)\s+(?:to\s+)?(?:[1-9]|[1-9]\d|100)\s*(?:%|percent)'
+
+
+# --- Set light color -----------------------------------------
+[[commands]]
+service = "server"
+feature = "lights"
+id = "color"
+
+target_words = [
+  "light", "lights", "bulb", "bulbs", "spot", "spots",
+]
+
+colors = [
+  "red", "green", "blue", "white", "yellow",
+  "orange", "purple", "pink", "cyan",
+]
+
+# NOTE: The existing fast-path regex also names the colors explicitly.
+# Editing the colors list alone may not change fast-path recognition.
+[[commands.patterns]]
+label = "complete color request"
+mode = "fullmatch"
+fast_path = true
+examples = [
+  "make the lights blue",
+  "set the lights to red",
+]
+regex = '(?:(?:make|set|turn)\s+(?:the\s+)?(?:lights?|bulbs?|spots?)\s+(?:to\s+)?)(?:blue|cyan|green|orange|pink|purple|red|white|yellow)'
+
+
+# ============================================================
+# SERVER / NAMED LIGHTS AND GROUPS
+# ============================================================
+
+# --- Power for one light or a group --------------------------
+# Named captures are tool arguments; keep target and state intact.
+# "smart life" and "small" map to the Tuya group; mushroom lamp maps to mushroom.
+[[commands]]
+service = "server"
+feature = "light_targets"
+id = "set_power"
+
+[[commands.patterns]]
+label = "state before named light or group"
+mode = "fullmatch"
+fast_path = true
+examples = ["turn off the mirror", "turn on the mushroom lamp", "switch off the lamp plug", "turn on the govee", "turn on the small lights", "turn off the smart life lights", "turn on all lights"]
+regex = '(?:turn|switch) (?P<state>on|off) (?:the )?(?P<target>lamp|mirror|mushroom|govee|tuya|small|smart life|all)(?: lamp| lights?| plugs?)?'
+
+[[commands.patterns]]
+label = "state after named light or group"
+mode = "fullmatch"
+fast_path = true
+examples = ["mirror off", "turn the mushroom lamp on", "switch the small lights off", "set the lamp to on", "all lights off"]
+regex = '(?:(?:turn|switch|set) )?(?:the )?(?P<target>lamp|mirror|mushroom|govee|tuya|small|smart life|all)(?: lamp| lights?| plugs?)? (?:to )?(?P<state>on|off)'
+
+
+# ============================================================
+# SERVER / PLUG STATE
+# ============================================================
+
+[[commands]]
+service = "server"
+feature = "plugs"
+id = "get_state"
+
+[[commands.patterns]]
+label = "named plug state question"
+mode = "fullmatch"
+fast_path = true
+examples = ["is the lamp plug on", "is the mirror off", "is the mushroom lamp on", "is the mirror light on"]
+regex = 'is (?:the )?(?P<plug>lamp|mirror|mushroom)(?: lamp| light| plug)? (?:on|off)'
+
+[[commands.patterns]]
+label = "named plug status request"
+mode = "fullmatch"
+fast_path = true
+examples = ["check the lamp plug", "status of the mirror", "what is the state of the mushroom lamp"]
+regex = '''(?:check|status of|what is the state of|what's the state of) (?:the )?(?P<plug>lamp|mirror|mushroom)(?: lamp| light| plug)?'''
+
+
+# ============================================================
+# SERVER / CUBE DISPLAY AND SYSTEM
+# ============================================================
+
+# These operate on Cube itself, never household lights or the backend.
+# Display off leaves voice listening enabled.
+[[commands]]
+service = "server"
+feature = "cube"
+id = "display_on"
+fast_path_exact = true
+exact = ["turn on your display", "turn the display on", "turn your display on", "enable your display", "turn on the cube display", "turn the cube display on", "cube display on", "display on"]
+
+[[commands]]
+service = "server"
+feature = "cube"
+id = "display_off"
+fast_path_exact = true
+exact = ["turn off your display", "turn the display off", "turn your display off", "disable your display", "turn off the cube display", "turn the cube display off", "cube display off", "display off"]
+
+[[commands]]
+service = "server"
+feature = "cube"
+id = "set_brightness"
+
+# Whole-number percentages only; invalid numbers prompt for clarification.
+[[commands.patterns]]
+label = "cube master display brightness"
+mode = "fullmatch"
+fast_path = true
+examples = ["set your display brightness to 20 percent", "set the cube brightness to 0%", "cube display brightness 100%", "set your display to 50 percent"]
+regex = '(?:(?:set|make|dim) )?(?:your (?:display(?: brightness)?|brightness)|(?:the )?cube (?:display(?: brightness)?|brightness)) (?:to )?(?P<percent>[+-]?\d[\d.,]*)\s*(?:%|percent)?'
+
+[[commands.patterns]]
+label = "malformed numeric setting guard"
+mode = "fullmatch"
+regex = '(?:(?:set|make|dim) )?(?:your (?:display(?: brightness)?|brightness)|(?:the )?cube (?:display(?: brightness)?|brightness)) (?:to )?(?P<percent>[+-]?\d.*)'
+
+[[commands]]
+service = "server"
+feature = "cube"
+id = "reboot"
+fast_path_exact = true
+exact = ["reboot cube", "reboot the cube", "restart cube", "restart the cube", "reboot yourself", "restart yourself", "reboot"]
+
+[[commands]]
+service = "server"
+feature = "cube"
+id = "shutdown"
+fast_path_exact = true
+exact = ["shut down cube", "shut down the cube", "shutdown cube", "shutdown the cube", "power off cube", "power off the cube", "shut yourself down", "turn yourself off", "shutdown"]
+
+[[commands]]
+service = "server"
+feature = "cube"
+id = "get_status"
+fast_path_exact = true
+exact = ["cube status", "check cube status", "check the cube status", "what is your status", "what's your status", "what is your display status", "what's your display status", "is your display on", "is your display off", "what is your display brightness", "what's your display brightness"]
+
+
+# ============================================================
+# SERVER / MOVIE
+# ============================================================
+
+# --- Cancel the previous movie request ----------------------
+[[commands]]
+service = "server"
+feature = "movie"
+id = "cancel_last"
+exact = [
+  "cancel my last movie request",
+  "cancel the last movie request",
+  "cancel last request",
+  "cancel my last request",
+]
+
+
+# --- Cancel a movie download --------------------------------
+[[commands]]
+service = "server"
+feature = "movie"
+id = "cancel_download"
+exact = [
+  "cancel the download",
+  "cancel download",
+  "cancel movie download",
+  "cancel that movie download",
+  "cancel that movie",
+  "cancel it",
+  "stop downloading it",
+  "stop the download",
+  "cancel my movie request",
+  "try cancelling it again",
+  "try canceling it again",
+  "cancel it again",
+  "retry cancellation",
+  "stop downloading",
+]
+
+[[commands.patterns]]
+label = "named cancellation"
+mode = "fullmatch"
+regex = '(?:cancel (?:the )?(?:download of|request for)|stop downloading|cancel) (.+)'
+
+
+# --- Forget the currently discussed movie -------------------
+[[commands]]
+service = "server"
+feature = "movie"
+id = "forget"
+exact = [
+  "forget that movie",
+  "forget the movie",
+  "forget it",
+]
+
+
+# --- Cancel an in-progress movie interaction ----------------
+[[commands]]
+service = "server"
+feature = "movie"
+id = "cancel"
+exact = [
+  "cancel",
+  "never mind",
+  "nevermind",
+]
+
+
+# --- Reject a movie suggestion -------------------------------
+[[commands]]
+service = "server"
+feature = "movie"
+id = "reject"
+exact = [
+  "no",
+  "nope",
+  "that's not it",
+  "thats not it",
+]
+
+
+# --- Confirm a movie suggestion ------------------------------
+[[commands]]
+service = "server"
+feature = "movie"
+id = "yes"
+exact = [
+  "yes",
+  "yeah",
+  "yep",
+  "okay",
+  "ok",
+  "do it",
+  "download it",
+  "that's the one",
+  "thats the one",
+]
+
+# These confirmation phrases are restricted while cancellation is pending.
+restricted_when_cancelling = [
+  "download it",
+  "that's the one",
+  "thats the one",
+]
+
+
+# --- Ask about the most recent movie request ----------------
+[[commands]]
+service = "server"
+feature = "movie"
+id = "last"
+exact = [
+  "what was the last movie i requested",
+  "what's the last movie i requested",
+]
+
+
+# --- Ask about a movie's current status ---------------------
+[[commands]]
+service = "server"
+feature = "movie"
+id = "status"
+exact = [
+  "has it started",
+  "has it started yet",
+  "is it ready",
+  "is it ready yet",
+  "is it downloading",
+  "any update",
+  "any updates",
+  "what's happening with it",
+  "what's happening with that movie",
+  "is that movie ready",
+  "did you cancel it",
+  "is it cancelled",
+  "is it canceled",
+  "has it been cancelled",
+  "has it been canceled",
+]
+
+[[commands.patterns]]
+label = "named status"
+mode = "fullmatch"
+regex = '''(?:what's happening with|what is happening with|any update on|status of) (.+)'''
+
+[[commands.patterns]]
+label = "readiness or download status"
+mode = "fullmatch"
+regex = '(?:is (.+?) (?:ready|available)(?: yet)?|has (.+?) started(?: downloading)?(?: yet)?)'
+
+
+# --- Correct a movie title ----------------------------------
+[[commands]]
+service = "server"
+feature = "movie"
+id = "correct"
+
+[[commands.patterns]]
+label = "correct title"
+mode = "fullmatch"
+regex = '(?:no (?:i meant )?|actually (?:i meant )?|i meant )(.+)'
+
+
+# --- Request a movie ----------------------------------------
+[[commands]]
+service = "server"
+feature = "movie"
+id = "request"
+
+[[commands.patterns]]
+label = "request title"
+mode = "fullmatch"
+regex = '(?:download|get|request)(?: (.+))?'
+
+
+# --- Ask whether a movie is available -----------------------
+[[commands]]
+service = "server"
+feature = "movie"
+id = "availability"
+
+[[commands.patterns]]
+label = "availability title"
+mode = "fullmatch"
+regex = '''(?:i want to watch|i'd like to watch)(?: (.+))?'''
+
+
+# --- Choose first / second / third result -------------------
+[[commands]]
+service = "server"
+feature = "movie"
+id = "select_ordinal"
+
+[[commands.patterns]]
+label = "pending movie ordinal"
+mode = "fullmatch"
+regex = '(?:the )?(first|second|third)(?: one)?'
+
+
+# --- Choose a movie by year ---------------------------------
+[[commands]]
+service = "server"
+feature = "movie"
+id = "select_year"
+
+[[commands.patterns]]
+label = "pending movie year"
+mode = "fullmatch"
+regex = '(?:the )?((?:18|19|20)\d{2})(?: one)?'
+
+
+# --- Choose the newer movie ---------------------------------
+[[commands]]
+service = "server"
+feature = "movie"
+id = "select_newer"
+exact = [
+  "newer",
+  "newer one",
+  "the newer one",
+  "latest",
+  "the latest one",
+]
+
+
+# --- Choose the older movie ---------------------------------
+[[commands]]
+service = "server"
+feature = "movie"
+id = "select_older"
+exact = [
+  "original",
+  "the original",
+  "the original one",
+  "older",
+  "the older one",
+]
+
+
+# ============================================================
+# SERVER / VOLUME
+# ============================================================
+
+[[commands]]
+service = "server"
+feature = "volume"
+id = "volume_up"
+fast_path_exact = true
+exact = ["volume up", "turn up the volume", "turn up volume", "turn the volume up", "increase the volume", "increase volume", "louder", "speak louder"]
+
+[[commands]]
+service = "server"
+feature = "volume"
+id = "volume_down"
+fast_path_exact = true
+exact = ["volume down", "turn down the volume", "turn down volume", "turn the volume down", "decrease the volume", "decrease volume", "quieter", "speak quieter"]
+
+[[commands]]
+service = "server"
+feature = "volume"
+id = "volume_up_small"
+fast_path_exact = true
+exact = ["a little louder", "a bit louder", "slightly increase the volume"]
+
+[[commands]]
+service = "server"
+feature = "volume"
+id = "volume_down_small"
+fast_path_exact = true
+exact = ["a little quieter", "a bit quieter", "slightly decrease the volume"]
+
+[[commands]]
+service = "server"
+feature = "volume"
+id = "volume_set"
+
+[[commands.patterns]]
+label = "exact numeric volume"
+mode = "fullmatch"
+fast_path = true
+examples = ["volume 50%", "set the volume to 50 percent", "set your volume to 30 percent", "make your volume 70%"]
+regex = '(?:volume|set (?:the |your )?volume to|make (?:the |your )?volume)\s+(?P<percent>[+-]?\d[\d.,]*)\s*(?:%|percent)?'
+
+[[commands.patterns]]
+label = "malformed numeric setting guard"
+mode = "fullmatch"
+regex = '(?:volume|set (?:the |your )?volume to|make (?:the |your )?volume)\s+(?P<value>[+-]?\d.*)'
+
+[[commands]]
+service = "server"
+feature = "volume"
+id = "volume_max"
+fast_path_exact = true
+exact = ["maximum volume", "set the volume to maximum", "full volume"]
+
+[[commands]]
+service = "server"
+feature = "volume"
+id = "volume_min"
+fast_path_exact = true
+exact = ["minimum volume", "set the volume to minimum"]
+
+[[commands]]
+service = "server"
+feature = "volume"
+id = "mute"
+fast_path_exact = true
+exact = ["mute", "mute yourself", "mute your sound", "turn off your sound"]
+
+[[commands]]
+service = "server"
+feature = "volume"
+id = "unmute"
+fast_path_exact = true
+exact = ["unmute", "unmute yourself", "turn your sound back on"]
+
+[[commands]]
+service = "server"
+feature = "volume"
+id = "volume_status"
+fast_path_exact = true
+exact = ["what's your volume", "what is your volume", "what's the volume", "what is the volume", "what is the current volume", "what volume are you at", "tell me your current volume"]
+
+[[commands]]
+service = "server"
+feature = "volume"
+id = "volume_more_small"
+fast_path_exact = true
+exact = ["a little more", "a bit more", "slightly more"]
+
+
+# ============================================================
+# CLIENT / SPEAKER CONNECTION
+# ============================================================
+
+# --- Connect to a speaker -----------------------------------
+[[commands]]
+service = "client"
+feature = "speaker"
+id = "connect"
+exact = [
+  "connect to speaker",
+  "connect to the speaker",
+  "connect to my speaker",
+  "connect to logitech speaker",
+  "connect to the logitech speaker",
+  "connect to my logitech speaker",
+  "connect the speaker",
+]
+
+
+# --- Disconnect from a speaker ------------------------------
+[[commands]]
+service = "client"
+feature = "speaker"
+id = "disconnect"
+exact = [
+  "disconnect speaker",
+  "disconnect the speaker",
+  "disconnect my speaker",
+  "disconnect from speaker",
+  "disconnect from the speaker",
+  "disconnect from my speaker",
+  "disconnect from logitech speaker",
+  "disconnect from the logitech speaker",
+  "disconnect from my logitech speaker",
+  "disconnect logitech speaker",
+  "disconnect the logitech speaker",
+]
+
+# ============================================================
+# SERVER / SPOTIFY MUSIC — deterministic controls and named playback
+# ============================================================
+[[commands]]
+service = "server"
+feature = "music"
+id = "play_music"
+fast_path_exact = true
+exact = ["play music", "play some music", "play spotify"]
+
+[[commands]]
+service = "server"
+feature = "music"
+id = "resume"
+fast_path_exact = true
+exact = ["resume music", "resume the music", "resume spotify", "resume"]
+
+[[commands]]
+service = "server"
+feature = "music"
+id = "pause"
+fast_path_exact = true
+exact = ["pause music", "pause the music", "pause spotify", "pause", "stop music", "stop the music", "stop spotify"]
+
+[[commands]]
+service = "server"
+feature = "music"
+id = "next"
+fast_path_exact = true
+exact = ["next", "next song", "next track", "skip song", "skip track", "skip this song"]
+
+[[commands]]
+service = "server"
+feature = "music"
+id = "previous"
+fast_path_exact = true
+exact = ["previous", "previous song", "previous track"]
+
+[[commands]]
+service = "server"
+feature = "music"
+id = "set_volume"
+[[commands.patterns]]
+label = "explicit music volume"
+mode = "fullmatch"
+fast_path = true
+examples = ["music volume 40", "spotify volume 0%", "set the music volume to 100 percent"]
+regex = '(?:set )?(?:the )?(?:music|spotify) volume (?:to )?(?P<percent>[+-]?\d[\d.,]*)\s*(?:%|percent)?'
+[[commands.patterns]]
+label = "malformed numeric setting guard"
+mode = "fullmatch"
+regex = '(?:set )?(?:the )?(?:music|spotify) volume (?:to )?\S.*'
+
+# Deterministic names; all search/execution stays in the backend.
+[[commands]]
+service = "server"
+feature = "music"
+id = "play_request"
+[[commands.patterns]]
+label = "typed music name"
+mode = "fullmatch"
+fast_path = true
+examples = ["play artist pink floyd", "play playlist evening chill", "play track blinding lights"]
+regex = 'play (?P<kind>artist|playlist|track) (?P<query>\S.*)'
+[[commands.patterns]]
+label = "personal playlist name"
+mode = "fullmatch"
+fast_path = true
+examples = ["play my discover weekly"]
+regex = 'play (?P<personal>my) (?!.* by )(?P<query>\S.*)'
+[[commands.patterns]]
+label = "track qualified by artist"
+mode = "fullmatch"
+fast_path = true
+examples = ["play blinding lights by the weeknd", "play don't stop me now by queen"]
+regex = 'play (?!artist |playlist |track )(?P<query>\S.*?) by (?P<artist>\S.*)'

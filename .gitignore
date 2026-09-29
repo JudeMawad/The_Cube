@@ -1,0 +1,104 @@
+# Python environments and generated output
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Credentials and machine-local configuration
+.env
+.env.*
+*.env
+*.env.*
+*.pem
+*.key
+*_api_key
+credentials.json
+secrets.json
+secrets/
+.config/
+events.token
+tokens.json
+tokens.lock
+playlist-aliases.json
+govee.json
+
+# Reviewed, placeholder-only deployment examples are public source.
+!*.env.example
+!.env.example
+
+# Local tool credentials and wake-model training metadata are never release assets.
+/.aws/
+/.agents/
+/.codex/
+/hey_cube_real_*/
+
+# Runtime data, recordings, model weights, and migration backups
+logs/
+*.log
+*.log.*
+recordings/
+uploads/
+*.wav
+*.mp3
+*.flac
+*.ogg
+*.m4a
+*.pcm
+models/
+.huggingface/
+*.onnx
+*.pt
+*.bin
+*.safetensors
+*.db
+*.sqlite
+*.sqlite3
+tmp/
+.migration-backup/
+.DS_Store
+
+# Keep provisioning documentation, never model weights.
+!client/assets/models/
+client/assets/models/*
+!client/assets/models/README.md
+
+# Native renderer outputs and machine-local rollback binaries
+# Ignore installed and rollback binaries independently of source builds.
+/client/native/fastled-noise/fastled-noise
+/client/native/fastled-noise/fastled-noise.*.tmp
+/client/native/fastled-noise/fastled-noise.backup
+/client/native/fastled-noise/fastled-noise.known-good
+/client/native/cube-display/cube-display
+/client/native/cube-display/cube-display.*.tmp
+/client/native/cube-display/cube-display.backup
+/client/native/cube-display/cube-display.known-good
+*.o
+*.a
+
+# Local wake-word collection, verifier, training, and evaluation data
+/client/data/
+/client/app/recordings/
+/client/app/wakeword_recordings/
+/client/app/verifier_data/
+/client/app/training_data/
+/client/app/evaluation_data/
+
+# Machine-local Windows orchestration settings
+cube-settings.psd1
+
+# User-supplied Piper configuration and private review material
+*.onnx.json
+/docs/PORTFOLIO_REPORT.md
+/.release-private/
+/public-release-private/

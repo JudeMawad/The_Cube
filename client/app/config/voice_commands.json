@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "commands": [
+    {
+      "service": "client",
+      "feature": "speaker",
+      "id": "connect",
+      "exact": [
+        "connect to speaker",
+        "connect to the speaker",
+        "connect to my speaker",
+        "connect to logitech speaker",
+        "connect to the logitech speaker",
+        "connect to my logitech speaker",
+        "connect the speaker"
+      ]
+    },
+    {
+      "service": "client",
+      "feature": "speaker",
+      "id": "disconnect",
+      "exact": [
+        "disconnect speaker",
+        "disconnect the speaker",
+        "disconnect my speaker",
+        "disconnect from speaker",
+        "disconnect from the speaker",
+        "disconnect from my speaker",
+        "disconnect from logitech speaker",
+        "disconnect from the logitech speaker",
+        "disconnect from my logitech speaker",
+        "disconnect logitech speaker",
+        "disconnect the logitech speaker"
+      ]
+    }
+  ]
+}

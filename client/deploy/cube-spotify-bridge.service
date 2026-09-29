@@ -1,0 +1,31 @@
+[Unit]
+Description=Cube read-only Soloist local playback observer
+Wants=user@@CUBE_UID@.service
+After=user@@CUBE_UID@.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=@CUBE_USER@
+Group=@CUBE_USER@
+WorkingDirectory=@CUBE_REPO@/client/app
+Environment=HOME=@CUBE_HOME@
+Environment=XDG_RUNTIME_DIR=/run/user/@CUBE_UID@
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=@CUBE_REPO@/client/app/.venv/bin/python -m audio.soloist
+Restart=always
+RestartSec=2
+KillSignal=SIGINT
+TimeoutStopSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/run/user/@CUBE_UID@
+RestrictAddressFamilies=AF_UNIX AF_INET
+IPAddressDeny=any
+IPAddressAllow=localhost
+
+[Install]
+WantedBy=multi-user.target

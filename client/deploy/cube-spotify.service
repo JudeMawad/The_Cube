@@ -1,0 +1,37 @@
+[Unit]
+Description=Cube Spotify Connect receiver (Soloist)
+Wants=network-online.target user@@CUBE_UID@.service cube-audio.service cube-spotify-bridge.service
+After=network-online.target user@@CUBE_UID@.service cube-audio.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=@CUBE_USER@
+Group=@CUBE_USER@
+Environment=HOME=@CUBE_HOME@
+Environment=XDG_RUNTIME_DIR=/run/user/@CUBE_UID@
+Environment=PIPEWIRE_REMOTE=pipewire-0
+Environment=PULSE_SINK=cube.spotify
+Environment="PIPEWIRE_PROPS={ node.dont-fallback = true }"
+Environment=PYTHONDONTWRITEBYTECODE=1
+LoadCredential=soloist.key:@CUBE_HOME@/.config/cube/spotify/soloist.key
+ExecStart=/usr/bin/python3 /opt/cube/soloist/tools/soloist-launch
+Restart=on-failure
+RestartSec=5
+RestartPreventExitStatus=10 78
+TimeoutStopSec=10
+UMask=0077
+LimitCORE=0
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=@CUBE_HOME@/.local/share/cube/soloist @CUBE_HOME@/.cache/cube/soloist
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+
+[Install]
+WantedBy=multi-user.target
