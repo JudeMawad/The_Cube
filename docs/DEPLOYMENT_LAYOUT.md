@@ -1,6 +1,6 @@
 # Deployment layout
 
-Each service has its own Python environment and assets. Repository scripts do not move installed files or restart services.
+Each service has its own Python environment and assets. Template rendering and repository checks do not install files or restart services. The [client restart script](../client/deploy/README.md#rebuild-and-restart-the-client) explicitly rebuilds and installs the renderer and restarts client services when you run it.
 
 | Component | Source / environment | Assets | Installed entrypoint |
 | --- | --- | --- | --- |
@@ -27,6 +27,6 @@ The native build writes only `client/native/cube-display/build/`. Preserve the i
 
 Credentials live under the service user's `~/.config/cube/`. The backend stores media state at `~/.local/state/cube/media-events.sqlite3`. Pi Soloist data/cache is under `~/.local/share/cube/soloist/` and `~/.cache/cube/soloist/`; user-runtime snapshots are under `$XDG_RUNTIME_DIR/cube-audio/`. None belongs in Git.
 
-Each service includes a tracked `voice_commands.json` generated from `config/voice_commands.toml`. Each service can deploy without loading the repository-level catalog. Original `.cubeanim` samples are included so the renderer does not require conversion tools at runtime. Regeneration commands are documented in [the catalog guide](VOICE_CATALOG.md) and [display architecture](DISPLAY_ARCHITECTURE.md).
+Each service includes a tracked `voice_commands.json` generated from `config/voice_commands.toml`. Each service can deploy without loading the repository-level catalog. The cat and alien `.cubeanim` files are tracked so the renderer does not require conversion tools at runtime. Regeneration commands are documented in [the catalog guide](VOICE_CATALOG.md) and [display architecture](DISPLAY_ARCHITECTURE.md).
 
 Ignored local model caches, recordings, old installed binaries and rollback copies may remain on a development machine. These files are not part of a public clone; keep any still needed for local operation or rollback.

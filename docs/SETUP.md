@@ -68,7 +68,7 @@ Create `~/.config/cube` with mode 0700. Keep configuration/token files mode 0600
 | Spotify Web API | Backend `~/.config/cube/spotify-web/` | PKCE helper creates private config/tokens; see [Spotify](SPOTIFY.md) |
 | Soloist | Pi private config/data/cache directories | Separately obtained receiver and own API key; see [Spotify](SPOTIFY.md) |
 
-[Media events](../server/MEDIA_EVENTS.md) includes a token generator that refuses overwrite and webhook setup. Missing integration configuration returns an error when that feature is used; it does not provision devices automatically. Mixed “all lights” commands can report partial success across configured/unconfigured groups. The Pi can display clock/original animations without backend credentials. Weather needs internet access. Music/artwork is optional and expires safely when unavailable.
+[Media events](../server/MEDIA_EVENTS.md) includes a token generator that refuses overwrite and webhook setup. Missing integration configuration returns an error when that feature is used; it does not provision devices automatically. Mixed “all lights” commands can report partial success across configured/unconfigured groups. The Pi can display the clock and local animations without backend credentials. Weather needs internet access. Music/artwork is optional and expires safely when unavailable.
 
 ## Optional AI node
 

@@ -47,6 +47,31 @@ Restart existing services to load new binaries or environment settings; `enable 
 
 Follow [Spotify](../../docs/SPOTIFY.md) to obtain a private receiver/key and configure backend authorization. Then review/install the rendered receiver, bridge, status, age-check service/timer files. Do not enable them before their required directories and `spotify-web-bridge.env` exist. They have independent lifetimes from voice/display.
 
+## Rebuild and restart the client
+
+After the first installation, run this from the checkout root as the Pi voice-service user, without putting `sudo` before Python:
+
+```sh
+python3 scripts/restart_client.py
+```
+
+The [restart script](../../scripts/restart_client.py) builds the renderer with `make -j2` while services keep running, then requests sudo access, stops the client, backs up the installed renderer to `client/native/cube-display/cube-display.backup`, and installs the candidate as root with mode 0755. It starts the audio graph, gain worker and display, followed by selected Spotify services and voice. Expect speech and music to be interrupted. It checks service stability for ten seconds and queries the renderer's control socket; physical output still needs checking on the Pi.
+
+These options skip the build or preview the operation:
+
+```sh
+python3 scripts/restart_client.py --restart-only
+python3 scripts/restart_client.py --dry-run
+```
+
+The script finds the checkout from its own location, so an absolute script path also works from another directory. Run it from the checkout used by the installed services; it refuses to install from a second clone. Voice, display, audio and gain-worker units must already be installed. Optional Spotify units and the age-check timer are selected only when enabled or active; absent or masked optional units are skipped. Existing systemd dependencies still apply. The age-check oneshot is not invoked directly, though its timer keeps its normal schedule.
+
+Settings, credentials, model files, Bluetooth pairing and installed units/drop-ins are preserved. It does not install Python dependencies, convert GIFs, update Soloist, restart the backend/AI node or restart system PipeWire/Bluetooth. Restarting the renderer reloads the existing `.cubeanim` catalog and initializes display settings from the installed unit. Use `--restart-only` after changing animation files or Python client code.
+
+Build or preflight failure leaves services untouched. A failed renderer installation, startup or socket check triggers an attempt to restore the previous binary and previously running services. A failure in another service is reported without restarting healthy services again. Errors return a nonzero exit status and show relevant `journalctl` commands. Check the final status; recovery is best-effort and does not restore previous source files or assets.
+
+If preflight reports missing `CUBE_DISPLAY_USER`, set `Environment=CUBE_DISPLAY_USER=YOUR_PI_USER` in the installed display unit or a service drop-in, matching the voice unit's `User`. The script checks this direct setting and rejects display EnvironmentFile overrides or an UnsetEnvironment entry for it. If installed units changed, run `sudo systemctl daemon-reload` before retrying. The restart script does not replace or rewrite service configuration.
+
 ## Check the installation
 
 Verify wake → capture → reply → idle, interrupt during processing and speech, display transitions, silent follow-up timeout, local Piper fallback, physical speaker routing and assistant/music volume separation. Test reboot/shutdown only as an explicit supervised hardware check. Confirm no stale canceled reply releases a power command. Keep private diagnostics out of Git. See [voice validation](../../docs/VOICE_BARGE_IN.md) and [testing limits](../../docs/PROJECT_STATUS.md).

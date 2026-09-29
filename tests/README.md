@@ -44,7 +44,7 @@ python3 scripts/check_docs.py
 make -C client/native/cube-display -j2
 ```
 
-The documentation check resolves links into the pinned dependency, so initialize it with `git submodule update --init --recursive` first. The native build requires the pinned submodule, `make` and `patch`; it only creates a candidate. Native unit tests compile an inert matrix facade and synthetic parser/render fixtures, never opening the panel. Original bundled sample assets are tested independently of third-party artwork.
+The documentation check resolves links into the pinned dependency, so initialize it with `git submodule update --init --recursive` first. The native build requires the pinned submodule, `make` and `patch`; it only creates a candidate. Native unit tests compile an inert matrix facade and synthetic parser/render fixtures, never opening the panel. Native tests check that every bundled `.cubeanim` file loads. Parser and playback behavior use synthetic fixtures independent of artwork provenance.
 
 `CUBE_TEST_ISOLATED_PIPEWIRE=1` opts into isolated PipeWire tests; they are skipped by default. Physical panel/audio, ReSpeaker AEC, Bluetooth, GPU inference/cancellation, live Spotify, smart-home and media workflows require [manual acceptance](../docs/PROJECT_STATUS.md). Passing unit tests does not verify those systems.
 

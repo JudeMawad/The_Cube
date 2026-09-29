@@ -32,6 +32,7 @@ The **backend** handles voice requests, command execution, Spotify control, and 
 This repository reflects my personal setup. Running it requires suitable hardware, configuration, accounts for the integrations you use, and separately supplied models. It is not a plug-and-play product.
 
 - [Setup](docs/SETUP.md)
+- [Rebuild and restart the client](client/deploy/README.md#rebuild-and-restart-the-client)
 - [Testing and development](tests/README.md), including hardware-free tests
 - [Hardware](docs/HARDWARE.md)
 - [Architecture](docs/ARCHITECTURE.md), with details on [voice](docs/VOICE_BARGE_IN.md), [display](docs/DISPLAY_ARCHITECTURE.md), and [Spotify](docs/SPOTIFY.md)
@@ -39,4 +40,4 @@ This repository reflects my personal setup. Running it requires suitable hardwar
 
 ## License
 
-Original Cube source and original animation samples use the [MIT license](LICENSE). Included third-party code and assets keep their own licenses and attribution; see [third-party notices](THIRD_PARTY_NOTICES.md).
+Original Cube source uses the [MIT license](LICENSE). Included third-party code and assets keep their own licenses and attribution; see [third-party notices](THIRD_PARTY_NOTICES.md).

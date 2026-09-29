@@ -2,7 +2,7 @@
 
 Cube includes voice interaction and barge-in, display apps, device controls, smart-home/media integrations and Spotify control and display. Running it requires your own hardware, accounts and configuration; follow [setup](SETUP.md).
 
-The repository includes source, tests, configuration examples, deployment templates, original animation runtime files and a pinned matrix dependency. It does not include wake, speech or LLM weights, Soloist binaries, private configuration, recordings, logs, caches or runtime state. Animation sources and their attribution are described in [Pi assets](../client/assets/README.md) and [third-party notices](../THIRD_PARTY_NOTICES.md). The cat and alien previews have unresolved provenance noted there; their inclusion does not establish redistribution rights.
+The repository includes source, tests, configuration examples, deployment templates, cat and alien animation runtime files and a pinned matrix dependency. It does not include wake, speech or LLM weights, Soloist binaries, private configuration, recordings, logs, caches or runtime state. Animation sources and their attribution are described in [Pi assets](../client/assets/README.md) and [third-party notices](../THIRD_PARTY_NOTICES.md). The cat and alien animations have unresolved provenance noted there; their inclusion does not establish redistribution rights.
 
 ## Automated validation
 
