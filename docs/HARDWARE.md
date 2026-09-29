@@ -1,14 +1,14 @@
 # Hardware overview
 
-Cube combines a Raspberry Pi 5, 64×64 HUB75 RGB matrix, ReSpeaker microphone/audio hardware and speaker in a custom enclosure with an acoustic chamber. The project's author designed and built the physical device and software.
+Cube combines a Raspberry Pi 5, 64×64 HUB75 RGB matrix, ReSpeaker microphone/audio hardware and speaker in a custom enclosure with an acoustic chamber.
 
-This repository provides software and hardware-facing configuration. It does not include enclosure CAD, dimensioned fabrication drawings, a complete bill of materials or a verified universal wiring guide. Device photography/video and mechanical design files can be added separately when available for publication.
+This repository provides software and hardware-facing configuration. It does not include enclosure CAD, dimensioned fabrication drawings, a complete bill of materials or a verified universal wiring guide.
 
-## Ownership and interfaces
+## Components and setup checks
 
-| Component | Software boundary | Commissioning requirement |
+| Component | Software | Setup check |
 | --- | --- | --- |
-| ReSpeaker microphone | One Pi-owned ALSA capture stream, 16 kHz mono PCM | Identify the actual card/channel and processed capture output; do not assume device index zero |
+| ReSpeaker microphone | One ALSA capture stream on the Pi, 16 kHz mono PCM | Identify the actual card/channel and processed capture output; do not assume device index zero |
 | Speaker | User PipeWire/WirePlumber session | Select the physical sink and verify ReSpeaker and Bluetooth routes independently |
 | 64×64 matrix | Sole C++ renderer using the pinned RGB matrix dependency and RP1 PIO patch | Review panel wiring, geometry, rotation, power and brightness for the actual build |
 | Enclosure/acoustic chamber | Physical design around microphone and speaker | Evaluate speaker leakage, user/speaker double-talk and wake performance in the assembled device |
@@ -18,6 +18,6 @@ The repository templates retain the reference renderer geometry/rotation and aud
 
 ## Physical verification
 
-Run [hardware-free tests](../tests/README.md) first. Build only a renderer candidate; do not start a second renderer against an active panel. During deliberate commissioning, verify microphone ownership, selected speaker, assistant/music volume separation, duck/restore, display blanking/brightness and stale-state expiry.
+Run [hardware-free tests](../tests/README.md) first. Build only a renderer candidate; do not start a second renderer against an active panel. During hardware setup, verify that only Cube captures the microphone, selected speaker, assistant/music volume separation, duck/restore, display blanking/brightness and stale-state expiry.
 
 Barge-in support does not by itself prove acoustic echo cancellation. Test speaker-only output and human/speaker double-talk at representative distances and volumes. An enabled DSP flag or Bluetooth connection is insufficient evidence of a working echo reference. [Voice validation](VOICE_BARGE_IN.md) includes ReSpeaker and upstream cancellation checks. No physical performance measurements are claimed by the CPU test results.

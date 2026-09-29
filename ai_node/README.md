@@ -1,6 +1,6 @@
 # Optional AI node
 
-This independent FastAPI service supplies `/transcribe`, `/process`, `/tts`, and `/health`. It communicates only over HTTP and does not import backend or Pi code. The backend owns tools/state; the Pi owns physical output. Omit the node by leaving backend `CUBE_AI_NODE_URL` empty.
+This FastAPI service provides `/transcribe`, `/process`, `/tts`, and `/health`. It communicates with the backend over HTTP and does not import backend or Pi code. The backend executes tools and stores state; the Pi controls audio and hardware. Omit the node by leaving backend `CUBE_AI_NODE_URL` empty.
 
 ## GPU setup
 
@@ -13,9 +13,9 @@ ai_node/.venv/bin/python -m pip install --no-deps kokoro-onnx==0.6.1
 ai_node/.venv/bin/python -m pip check
 ```
 
-Kokoro's distribution declares CPU ONNX Runtime, so `pip check` can report that unmet metadata dependency when only `onnxruntime-gpu` is intentionally installed. Inspect other failures; do not “fix” that declaration by installing both ONNX Runtime distributions. CPU-only test environments are separate from production.
+Kokoro's distribution declares CPU ONNX Runtime, so `pip check` can report that unmet metadata dependency when only `onnxruntime-gpu` is intentionally installed. Inspect other failures; do not “fix” that declaration by installing both ONNX Runtime distributions. Use a separate environment for [CPU-only tests](../tests/README.md).
 
-Provision `ai_node/assets/models/kokoro/kokoro-v1.0.onnx` and `voices-v1.0.bin` from the model sources linked in [notices](../THIRD_PARTY_NOTICES.md), or set explicit paths. Whisper defaults to `base.en`, CUDA, float16 and its service-local cache. First load can download weights; provision/cache them before an offline deployment. No models are supplied by another service implicitly.
+Provision `ai_node/assets/models/kokoro/kokoro-v1.0.onnx` and `voices-v1.0.bin` from the model sources linked in [notices](../THIRD_PARTY_NOTICES.md), or set explicit paths. Whisper defaults to `base.en`, CUDA, float16 and its service-local cache. First load can download weights; provision/cache them before an offline deployment. Each service needs its own model setup.
 
 ## Configuration
 
@@ -41,7 +41,7 @@ Run `./ai_node/start.sh` from any working directory. It discovers pip-installed 
 
 The schema also supports a constrained `respond` phase for compatibility. The current backend uses its own tool result wording and does not call that phase. Keep both service-local schemas and the cross-service contract tests; do not introduce runtime cross-imports.
 
-Disconnect cancellation closes owned HTTP work, skips queued inference and suppresses stale completions. Native inference retains resource ownership until safe cleanup. LLM HTTP cancellation does not prove the upstream GPU stopped computing. See [voice validation](../docs/VOICE_BARGE_IN.md).
+Disconnect cancellation closes owned HTTP work, skips queued inference and suppresses stale completions. Running native inference keeps its resources locked until cleanup is safe. LLM HTTP cancellation does not prove the upstream GPU stopped computing. See [voice validation](../docs/VOICE_BARGE_IN.md).
 
 ## Development and deployment
 

@@ -2,7 +2,7 @@
 
 Cube uses Soloist as the Pi-local Spotify Connect receiver and the Spotify Web API for backend control. Spotify internet access, your own authorization and a reachable backend are required. The optional AI node is not required for music commands. No receiver binaries, keys, OAuth tokens or private playlists are bundled.
 
-## Ownership and signal paths
+## Audio and control paths
 
 ```text
 Phone / Spotify -> Soloist -> cube.spotify -> stereo DSP gain -> physical speaker
@@ -12,7 +12,7 @@ Pi receiver observer -> backend reporter -> MusicController
 Voice -> backend deterministic parser -> validated music tool -> MusicController
 ```
 
-The graph runs independently of voice. Assistant volume changes only `cube.assistant`; Spotify user volume and DSP duck gain are separate controls. Both outputs follow the selected physical speaker. The gain worker uses 0.10 duck gain, 150 ms down, 400 ms restore and 20 ms cadence, with lease/process liveness recovery. Receiver snapshots and interaction leases live in `$XDG_RUNTIME_DIR/cube-audio/`. A stale/crashed voice process cannot keep ownership indefinitely. ReSpeaker and Bluetooth need separate physical acceptance.
+The graph runs independently of voice. Assistant volume changes only `cube.assistant`; Spotify user volume and DSP duck gain are separate controls. Both outputs follow the selected physical speaker. The gain worker uses 0.10 duck gain, 150 ms down, 400 ms restore and 20 ms cadence, with lease/process liveness recovery. Receiver snapshots and interaction leases live in `$XDG_RUNTIME_DIR/cube-audio/`. The ducking lease expires if the voice process stops responding or crashes. ReSpeaker and Bluetooth need separate physical acceptance.
 
 ## Backend authorization
 
@@ -28,7 +28,7 @@ Run the browser callback on the backend host, or intentionally tunnel its loopba
 
 The helper owns `~/.config/cube/spotify-web/` (0700): `config.json`, `tokens.json`, `tokens.lock` (0600). Files are bounded, owner-checked, no-symlink and atomically replaced. Refresh is locked across processes. Missing/invalid authorization is reported rather than guessed. `logout` removes local Web API tokens; revoke the grant separately in Spotify account settings if desired. Neither logs Soloist out.
 
-The backend and Pi share `~/.config/cube/events.token`; `CUBE_CLIENT_ID` must match the configured Cube identity. Copy/edit `config/examples/spotify-web-bridge.env.example` to the Pi's `~/.config/cube/spotify-web-bridge.env` for the receiver status reporter. Backend `MusicController` owns state/control; Pi reports expiring versioned receiver telemetry without controlling playback itself.
+The backend and Pi share `~/.config/cube/events.token`; `CUBE_CLIENT_ID` must match the configured Cube identity. Copy/edit `config/examples/spotify-web-bridge.env.example` to the Pi's `~/.config/cube/spotify-web-bridge.env` for the receiver status reporter. The backend `MusicController` manages Spotify state and commands. The Pi status reporter sends versioned receiver snapshots with an expiry time; the reporter does not control playback.
 
 ## Soloist installation
 
@@ -44,11 +44,11 @@ python3 client/deploy/spotify/check-build-age.py --release /tmp/cube-soloist-can
 
 Preparation validates archive/ELF structure, executes the trusted candidate's `--version`, retains notices and rejects already-old builds. Use a new destination. This does not install or authenticate the receiver.
 
-During deliberate installation, copy the reviewed candidate to root-owned `/opt/cube/soloist/releases/<build-id>/`, and create `current` as a relative symlink to that release. Preserve a still-unexpired accepted `previous` release for rollback. Install `client/deploy/spotify/*.py` and `soloist-launch` as root-owned 0644 files under `/opt/cube/soloist/tools/`. The unit invokes the launcher with Python. Install the current audio graph as described in [Pi deployment](../client/deploy/README.md).
+To install, copy the reviewed candidate to root-owned `/opt/cube/soloist/releases/<build-id>/`, and create `current` as a relative symlink to that release. Preserve a still-unexpired accepted `previous` release for rollback. Install `client/deploy/spotify/*.py` and `soloist-launch` as root-owned 0644 files under `/opt/cube/soloist/tools/`. The unit invokes the launcher with Python. Install the current audio graph as described in [Pi deployment](../client/deploy/README.md).
 
 Create owner-only directories `~/.config/cube/spotify`, `~/.local/share/cube/soloist`, and `~/.cache/cube/soloist`; store the key as `spotify/soloist.key` mode 0600 through a private editor or hidden prompt. The systemd unit uses `LoadCredential`; do not place the value in an environment variable or command line. The managed root-owned credential copy may be 0400 or 0440; the original remains 0600. Keep local session/cache/crash data private.
 
-Render and review the Pi templates. Install the receiver, bridge, status, age-check service and timer only after their prerequisites exist. Start/enable them intentionally, alongside the independent `cube-audio` graph and gain worker. Do not run a second receiver or the retired proof graph. Check build age before updating the `current` symlink; never edit the recorded timestamp to bypass expiry.
+Render and review the Pi templates. Install the receiver, bridge, status, age-check service and timer only after their prerequisites exist. Start and enable them alongside the independent `cube-audio` graph and gain worker. Do not run a second receiver or the retired proof graph. Check build age before updating the `current` symlink; never edit the recorded timestamp to bypass expiry.
 
 ## Supported grammar and precedence
 
@@ -94,11 +94,12 @@ also rejects any AI intent absent from the advertised tool set. Other Cube AI
 features remain available. Shared STT/TTS may still attempt their configured
 remote providers, but their existing backend/Pi fallbacks let music work with
 the PC completely off. Spotify internet access and a reachable backend remain
-required. There is no new AI schema, audio path, or music state authority.
+required.
 
 One shared decision classifies requests as executable, blocked, clarification, or
 not music before any search, mutation, legacy routing, or AI interpretation.
-Wrapper inspection identifies music ownership only; removing a negation or quote
+Inspecting polite or conditional wording only identifies whether a request
+concerns music; removing a negation or quote
 can never create an executable command. Examples such as `don't play artist Queen`,
 `play track Blinding Lights, not now`, and `play artist Queen if the lights are on`
 receive a backend rejection, with no search or AI call. Blocked/clarification
@@ -119,7 +120,6 @@ to confirm. Only actual backend music replies enter history. Ordinary nonmusic
 conversation is unchanged, including `play chess only if you can`. Ambiguous
 untyped names such as `play Queen` remain outside the music grammar and may reach
 normal AI conversation; the music subsystem cannot execute those AI results.
-No global AI-conversation sanitizer is introduced.
 
 ## Resolution, aliases, and replies
 
@@ -130,7 +130,7 @@ matching title and artist; artist and playlist requests retain exact-match and
 ambiguity checks. Equivalent releases of the same title/performers remain
 equivalent under the existing resolver. A wrong artist or ambiguous playlist
 never silently selects unrelated content. Clarifications ask for a new complete
-command; no numbered pending-selection state is added.
+command; Cube does not keep a numbered selection list.
 
 Successful music commands return `listen_for_seconds=0`: after the spoken
 confirmation Cube returns to idle without opening a follow-up window. Say
@@ -145,7 +145,8 @@ directory), for example:
 {"YOUR_PLAYLIST_ALIAS": "spotify:playlist:YOUR_22_CHARACTER_PLAYLIST_ID"}
 ```
 
-Use a real playlist ID. Existing bounded, owner-only, no-symlink checks remain.
+Use a real playlist ID. The file must fit the size limit, be owned by the service
+user and not be a symlink.
 Aliases are read on demand and apply only to playlist/auto resolution, never
 explicit track/artist requests. An alias needs no additional playlist-read scope.
 Personal library enumeration retains optional `playlist-read-private` access;
@@ -166,29 +167,25 @@ no Spotify candidates, URIs, or raw responses enter AI context. Failed commands
 record truthful failure replies; cancellation suppresses stale response/history
 completion through the existing turn ownership mechanism.
 
-## Authorization, idempotency, and audio boundaries
+## Authentication, duplicate commands and cancellation
 
 Named playback uses the same authenticated `/voice` control session/request IDs
 and configured Cube identity as exact controls. Request IDs are derived by the
-existing hash. The controller's bounded 128-command receipt cache is unchanged;
-its existing resolved-request cache now also compares the selection policy.
+existing hash. The controller caches up to 128 command receipts.
+Its resolved-request cache also compares the selection policy.
 Duplicate successful or failed mutations are not replayed. These caches are
 process-local and bounded, not durable exactly-once delivery.
 
-Cancellation checks, serialization, transfer/resume, and OAuth handling remain
-unchanged. A started external command may already have succeeded; cancellation
-never undoes it or replays it. Coordinator remains the sole voice lifecycle
-owner. Duck gain stays **0.10**, 150 ms down, 400 ms restore, 20 ms cadence. The Pi
-owns playback, mic, cues, routing, follow-up, and barge-in. Assistant/physical gain remains independent of the audio graph.
+Cancellation cannot undo a command already sent to Spotify or replay it. The Pi
+Coordinator manages voice interactions and ducking; see [audio and control paths](#audio-and-control-paths)
+for gain settings and [voice lifecycle](VOICE_BARGE_IN.md) for cancellation behavior.
 
+## Backend display API
 
-## Ownership and backend contract
-
-`MusicController` remains the sole cloud playback state/command authority. Its
+`MusicController` manages cloud playback state and commands. Its
 read cache accepts an optional freshness interval (display: 5 s, existing default:
-15 s). The internal snapshot now retains album artwork URL; `/music/state` v1
-keeps exactly its old shape and does not expose that internal field. Mutation
-acknowledgments, receipts, cancellation, and deduplication are unchanged.
+15 s). The internal snapshot includes the album artwork URL; `/music/state` v1
+does not expose that field.
 
 Two GET endpoints use the existing music router's Cube token and trusted client
 identity validation. Both return `Cache-Control: no-store`:
@@ -213,17 +210,18 @@ also receives a pixel allocation limit. Prepared frames fit the image on black.
 The in-memory image/URL cache holds eight entries, with one fetch/decode in flight
 and a 30 s failed-image retry interval. Network reads/timeouts and total fetch
 time are bounded; encoded HTTP compression is rejected. Artwork work occurs
-outside the MusicController lock. No disk artwork cache, mutation, search,
-post-mutation verification, new OAuth scope, sleep/retry of mutations, or AI call
-is involved. State refresh uses the existing controller error/rate-limit backoff.
+outside the MusicController lock. Artwork is cached only in memory. Fetching it
+needs no extra OAuth scope, playback command, search or AI call. State refresh
+uses the controller's error/rate-limit backoff.
 
 ## Pi provider and local protocol
 
 `display/music.py:MusicProvider` starts/stops with `cube.py`, following the weather
 provider pattern. It uses `CUBE_SPOTIFY_BACKEND_URL` when set, otherwise the
 existing voice backend base URL; it reuses `CUBE_CLIENT_ID` and
-`~/.config/cube/events.token`. No systemd or hardware configuration changes are
-required. Missing configuration/auth/backend/renderer leaves voice/audio working.
+`~/.config/cube/events.token`. The provider runs within the voice process.
+Voice and audio continue working if display configuration, authentication,
+backend data or the renderer is unavailable.
 
 Three background coroutines poll state (5 s active, 15 s idle), fetch changed or
 missing art, and publish local receiver observations (1 s). Network waits never
@@ -256,7 +254,7 @@ music-art v1 <epoch> <sequence> <track_hash> <art_hash>\n<12288 binary RGB24 byt
   is accepted per frame. Rendering performs no decoding, network I/O, file I/O,
   or per-frame image allocation.
 
-Coordinator owns voice interaction and ducking leases; provider workers do not control audio. Spotify audio still runs on the Pi/Soloist, never through backend.
+The provider only supplies display data. Soloist plays audio on the Pi.
 
 
 ## Display behavior
@@ -265,6 +263,6 @@ The music app is available only with fresh backend state for playback on Cube an
 
 ## Validation
 
-Automated tests cover OAuth/storage, API boundaries, resolver/controller, deterministic grammar, receipts, Pi reporting, gain recovery and native display protocol. Use [component test commands](../tests/README.md); no live credentials are needed. The isolated PipeWire proof is explicitly opt-in and is separate from ordinary unit tests.
+Automated tests cover OAuth/storage, API boundaries, resolver/controller, deterministic grammar, receipts, Pi reporting, gain recovery and native display protocol. Use [component test commands](../tests/README.md); no live credentials are needed. The isolated PipeWire test is opt-in and is separate from ordinary unit tests.
 
-Physical acceptance must verify: phone playback reaches the intended speaker; voice ducks/restores music without changing assistant volume; music controls work with AI off; successful commands return to idle; cancellation does not replay a mutation; transfer away removes the display; stale provider/image packets cannot restore an old track; pause/resume notices and progress are correct; expired receiver builds fail safely. Perform restart/recovery tests only in an intentional deployment window. Automated passes do not certify these hardware/account checks.
+On the Pi, verify: phone playback reaches the intended speaker; voice ducks/restores music without changing assistant volume; music controls work with AI off; successful commands return to idle; cancellation does not replay a mutation; transfer away removes the display; stale provider/image packets cannot restore an old track; pause/resume notices and progress are correct; expired receiver builds fail safely. Perform restart/recovery tests only in an intentional deployment window. Automated passes do not certify these hardware/account checks.

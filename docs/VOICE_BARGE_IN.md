@@ -1,14 +1,14 @@
 # Voice lifecycle and barge-in
 
-## Ownership
+## How an interaction runs
 
-`client/app/cube.py` continuously consumes a single 16 kHz mono `arecord` stream in 80 ms frames. openWakeWord receives every frame, including while processing or speaking. `interaction.py:Coordinator` owns generations, recording, follow-up and presentation. A wake replaces the current interaction; the wake latch prevents repeated triggers from one detection. Pre-roll retains command onset.
+`client/app/cube.py` continuously consumes a single 16 kHz mono `arecord` stream in 80 ms frames. openWakeWord receives every frame, including while processing or speaking. `interaction.py:Coordinator` tracks interaction generation IDs, recording, follow-up and display state. A wake replaces the current interaction; the wake latch prevents repeated triggers from one detection. Pre-roll retains command onset.
 
-`voice_runtime.py` owns background asynchronous HTTP and audio work. `audio/async_speech.py` tries remote Kokoro then local Piper, retaining the established voice settings and explicit `cube.assistant` route. Cancellation closes owned HTTP exchanges and terminates/reaps only owned subprocesses. Generation checks suppress stale LEDs, follow-up and history completion. Notifications are revalidated immediately before playback and acknowledged after owned playback ends.
+`voice_runtime.py` runs asynchronous HTTP and audio work in the background. `audio/async_speech.py` tries remote Kokoro then local Piper, retaining the established voice settings and explicit `cube.assistant` route. Cancellation closes owned HTTP exchanges and terminates/reaps only owned subprocesses. Generation checks suppress stale LEDs, follow-up and history completion. Notifications are revalidated immediately before playback and acknowledged after owned playback ends.
 
-Reboot/shutdown receipts require matching successful response playback to complete; a failed, interrupted or superseded receipt cannot be upgraded by a later fallback. Hardware release runs away from capture. Coordinator remains the lifecycle authority; music, display providers and HTTP workers do not take that ownership.
+Reboot and shutdown require successful playback of the matching acknowledgment. A later fallback cannot authorize a command whose acknowledgment failed, was interrupted or was replaced. Hardware operations run outside microphone capture. The Coordinator controls interaction state; music, display and HTTP workers report results to it.
 
-The backend and AI node supervise consumed-body disconnects with service-local helpers. Interaction IDs travel as headers, not LLM prompt content. Native workers retain their resource/lock until safe cleanup. Cancellation skips queued inference, stops Whisper segment consumption, prevents fallback and suppresses stale results. A started external effect may already have succeeded: its bookkeeping must finish and it must not be replayed automatically.
+The backend and AI node monitor HTTP disconnects even after reading the request body, using separate helpers in each service. Interaction IDs travel as headers, not LLM prompt content. Native workers retain their resource/lock until safe cleanup. Cancellation skips queued inference, stops Whisper segment consumption, prevents fallback and suppresses stale results. A started external effect may already have succeeded: its bookkeeping must finish and it must not be replayed automatically.
 
 ## Audio and privacy
 
@@ -27,7 +27,7 @@ PYTHONPATH=server CUBE_AI_NODE_URL= server/.venv/bin/python -m unittest   tests.
 
 The cross-service suite includes fake-provider TCP cancellation tests with ephemeral loopback listeners. It does not call installed services. Tests require ordinary local socket/thread support; a restrictive sandbox can prevent asyncio wakeups and cause hangs unrelated to production behavior.
 
-## Physical acceptance
+## Hardware checks
 
 1. Verify current microphone, speaker, matrix and service identities before changing deployment.
 2. Exercise normal commands with AI enabled and disabled; confirm local STT/TTS fallbacks are actually provisioned.

@@ -1,7 +1,7 @@
-# Cube display foundation, carousel, Clock, Weather, Animation, and Music
+# Display architecture
 
-The Raspberry Pi has one production HUB75 owner: `client/native/cube-display/cube-display.cc`.
-Its existing process initializes RGBMatrix and RP1 PIO, owns the 64×64 geometry,
+One C++ process drives the HUB75 panel: `client/native/cube-display/cube-display.cc`.
+It initializes RGBMatrix and RP1 PIO and controls the 64×64 geometry,
 pixel mapping, 33 ms frame pacing, VSync, brightness output, blanking, and shutdown.
 Display apps and composition code include no matrix or GPIO headers.
 
@@ -51,11 +51,10 @@ data can be shown. `Render(const DisplayContext&, Frame64*)` writes pixels into
 caller owned storage. `DisplayContext` currently contains monotonic time and frame
 duration. An app performs no I/O, audio, interaction management, hardware access,
 or scheduling. `DisplayRuntime` holds one non owning optional app pointer. With
-no available app, it returns a black `Frame64`; the old ambient animation was
-intentionally removed and is never used as fallback. Black pixels are submitted
+no available app, it returns a black `Frame64`. Black pixels are submitted
 through the normal frame path and differ from display off or brightness zero.
 
-The existing Pi `Coordinator` remains the authoritative interaction owner. Its
+The Pi `Coordinator` manages voice interactions. Its
 generation checks reject stale updates before state reaches the native socket.
 The native parser maps wake/listening, thinking, speaking with level, follow-up,
 and idle into an immutable `PresentationState`. `CubeStateOverlay` only changes
@@ -63,34 +62,28 @@ pixels in a copy of the app frame. Its straight gray bottom-row line is hidden
 at idle, reveals from the center on listening/wake, carries an RGB-white moving
 highlight while thinking, varies with speech level, and stays steady during follow-up.
 These deterministic effects use elapsed state time supplied by the renderer;
-their exact appearance remains isolated from interaction ownership.
-There is no second voice state machine.
+the overlay displays state without changing the interaction.
 
-Explicit text or icon content has complete frame ownership above the app and
-overlay. The Pi volume adapter uses it for solid white `MUTE`, `VOL`, or percentage
-text, refreshing its two-second window at playback. `ContentRenderer` retains
-the one existing 900 ms spatial dissolve for forming, morphing, and releasing
+Explicit text or icons replace the app and overlay for the whole frame.
+The Pi volume adapter uses this content layer for solid white `MUTE`, `VOL`, or percentage
+text, refreshing its two-second window at playback. `ContentRenderer` uses
+a 900 ms spatial dissolve for forming, morphing, and releasing
 content. `dissolve-transition.h/.cc` contains its hardware free per-pixel effect;
-the content layer owns masks, target state, and submitted-frame snapshots. No
-general animation framework was added. Perlin, animated palette colors, and
-the former full-screen ambient texture are gone.
+the content layer owns masks, target state, and submitted-frame snapshots.
 
 The output boundary applies one `master_brightness_percent` directly to
 RGBMatrix. `0` clears submitted pixels because the matrix library accepts only
 1–100. `25`, `50`, and `100` set those physical percentages exactly. Startup
 master is initialized from the parsed `--led-brightness` option; the repository
 service template supplies `50`, and the compiled default is `10`. The
-installed Pi unit may use different flags until the coordinated naming
-migration. Display off is
-an independent visibility flag. `set_animation` and the redundant scaled
+installed Pi unit may use different flags; check it before deployment. Display
+off is an independent visibility flag. `set_animation` and the redundant scaled
 brightness status field were removed from the control contract.
 
-## Registry, ownership, and configuration
+## App registry and configuration
 
-Production registers `TetrisClockApp` as `tetris-clock`, `WeatherApp` as
-`weather`, `AnimationApp` as `animation`, and `MusicApp` as `music`, in
-15-second/15-second/10-second/10-second
-carousel order. All apps and their
+The renderer registers `TetrisClockApp` as `tetris-clock`, `WeatherApp` as
+`weather`, `AnimationApp` as `animation`, and `MusicApp` as `music`. All apps and their
 sources live at renderer scope before the registry, scheduler, and runtime.
 Volume and Cube presentation states are not apps. Empty schedules still
 produce a black app frame.
@@ -167,9 +160,8 @@ The renderer compares the selected pointer against the pointer last installed in
 default no-op `DisplayApp::OnActivated(context)` hook before the first render
 after a pointer change. Runtime remains unaware of IDs, durations, or rotation
 rules and renders each frame normally.
-App changes are direct switches, with no app-to-app transition. The content
-layer retains exclusive ownership of its original solid-white presentation and
-dissolve; the scheduler knows neither volume nor transition details.
+App changes are direct switches. Only explicit content uses the solid-white
+presentation and dissolve; the scheduler does not handle volume or transitions.
 
 ## Spotify music display
 
@@ -195,36 +187,27 @@ x=8..55, y=6..53 of a 64×64 RGB frame. The renderer uniformly enlarges that
 entire viewport to 58×58 with nearest-neighbor pixel-center sampling, including
 its letterboxing and black artwork pixels. It does not crop or detect image
 edges. Controls align with the viewport width; non-square art retains padding.
-The source still contains at most 48×48 pixels of detail. This layout requires
-only a Pi renderer update; no backend or protocol change is required. The
-candidate build is not installed automatically.
+The source still contains at most 48×48 pixels of detail. Changing these layout
+constants requires rebuilding and installing the Pi
+renderer; the backend image format stays the same.
 
-Fresh playback on Cube makes music available in its normal carousel position.
-Starting playback, resuming, and track changes show music immediately for five
-seconds; repeated playing updates and buffering recovery do not extend it.
-A fresh playing-to-paused edge shows
-music immediately for five seconds, temporarily suspending the carousel. The
-interrupted entry then resumes its remaining dwell; repeated pause packets do
-not extend the notice. Resume replaces it with a playing notice. Initial paused state does not trigger
-a notice. Buffering freezes progress. Stale/disconnected/transferred playback
-removes music availability. Explicit content, blanking, brightness, and voice
-composition retain their existing priorities. Hidden pause notices expire in
-wall time rather than replaying later.
+Music availability, five-second playback notices and stale-state handling are
+described in [Spotify display behavior](SPOTIFY.md#display-behavior). Buffering
+recovery and repeated updates do not extend a notice. Initial paused state
+does not trigger one; resume replaces a pause notice with a playing notice.
+Explicit content, blanking, brightness and voice overlays keep their priorities.
+Hidden pause notices expire in wall time rather than replaying later.
 
-The optional Pi `display/music.py:MusicProvider` polls authenticated backend
-display endpoints and samples the existing Soloist observer. Network requests
-and one-second local publication run concurrently in its background event loop.
-No renderer network work, image decoding, or playback control is added. Backend
-state remains owned by `MusicController`. See [Spotify protocol](SPOTIFY.md) for
-the wire contract, limits, and physical acceptance sequence.
+The Pi `display/music.py:MusicProvider` polls the backend display endpoints and
+samples the Soloist observer. Network requests and one-second local publication
+run concurrently in its background event loop. The renderer neither fetches nor
+decodes images. See [Spotify protocol](SPOTIFY.md#pi-provider-and-local-protocol)
+for the wire format, limits and expiry rules.
 
 ## Tetris Clock + Date
 
-`apps/tetris-clock.h/.cc` implements the normal `DisplayApp` contract. The path is
-`TetrisClockApp → DisplayAppRegistry → CarouselScheduler → DisplayRuntime → Frame64`;
-the existing overlay, explicit-content dissolve, brightness, and physical output
-follow unchanged. The app does not own a frame loop, hardware, threads, audio,
-brightness, or network access and does not know about scheduling or volume.
+`apps/tetris-clock.h/.cc` implements `DisplayApp` and uses the shared
+[frame path](#frame-path).
 
 `LocalClockSource::Read(std::tm*)` is a small injected boundary. Production uses
 `SystemLocalClock` with the Pi's system time and local timezone via `time`,
@@ -268,8 +251,8 @@ dims only the date stripe; master brightness remains controlled at the output
 boundary. Compile-time bounds checks prevent moving the date out of the stripe,
 over the clock, or onto the bottom overlay row.
 
-The prior explicit-content font is centered, scaled, and limited to five glyphs,
-so it remains unchanged. `pixel-font.h` supplies a small hand-drawn 5×9 bold font for
+The separate explicit-content font is centered, scaled and limited to five glyphs.
+`pixel-font.h` supplies a small hand-drawn 5×9 bold font for
 digits and English date letters, with a one-pixel character gap and clipped
 native frame drawing. The date is a black cutout in the white stripe and never animated.
 Its character buffer updates only when the visible local date changes.
@@ -366,8 +349,7 @@ heavy rain moves faster and uses more lanes; thunder flashes a fixed bolt for
 selects sparse, medium, or dense precipitation lanes at 0–33%, 34–66%, and
 67–100%. All movement is a deterministic function of `DisplayContext::now`.
 There is no per-frame heap allocation, randomness, activation reset, or app
-brightness control. The existing explicit content, 900 ms dissolve, master
-brightness, and physical rotation retain their established ownership.
+brightness control. Explicit content, dissolve, brightness and rotation use the shared frame path.
 
 ## Local GIF conversion and AnimationApp
 
@@ -377,15 +359,15 @@ GIFs are development inputs only. The production path is:
         → startup AnimationCatalog → AnimationApp → registry → carousel
         → Frame64 → existing overlay, explicit content, brightness, and HUB75 output
 
-The tracked source GIFs are in `client/assets/animations/source/`. The four
-tracked runtime files—`eyes`, `ghost`, `heart`, and `rocket`—are original pixel art
+See [Pi assets](../client/assets/README.md) for the GIF previews and attribution.
+The four runtime files—`eyes`, `ghost`, `heart`, and `rocket`—are original pixel art
 generated by `tools/generate_cube_animation_samples.py` and converted through
 `tools/convert_cube_animation.py`. Runtime files are the top-level
 `client/assets/animations/*.cubeanim`; the loader does not scan subdirectories.
 The installed service's working directory is `client/native/cube-display`, so
-its startup-only catalog path is `../../assets/animations`. There is no runtime
-GIF decoder, network request, Python dependency, new service, or other matrix
-owner. The catalog is fixed until the renderer is next started.
+its startup-only catalog path is `../../assets/animations`. Playback needs no
+GIF decoder, network request, Python process or extra service. The catalog is
+fixed until the renderer is next started.
 
 `.cubeanim` v1 is uncompressed. A 16-byte header contains ASCII `CUBEANIM`
 (8 bytes), then little-endian unsigned 16-bit version `1`, width `64`, height
@@ -445,15 +427,12 @@ second renderer against the panel. To recreate the original samples,
 run `tools/generate_cube_animation_samples.py` with the source and runtime
 directories as its two arguments, then run the preview command above.
 
-## Future apps and testing
+## Adding apps and testing
 
-To implement a future app, derive from `DisplayApp`, inspect only the context
+To add an app, derive from `DisplayApp`, inspect only the context
 and an already cached source, and write a complete `Frame64`. Register a stable app object
 and add its ID and duration to the native schedule. The scheduler sees only
-`Available(context)` and does not know why data is unavailable. Clock + Date and
-Weather are the production information apps; Animation is the local
-entertainment app. Other app types and remote
-configuration remain future work.
+`Available(context)` and does not know why data is unavailable. The carousel configuration is compiled into the renderer.
 
 Native tests construct contexts and fake apps, render frames, apply the overlay,
 compose explicit content and dissolve transitions, then inspect pixels without

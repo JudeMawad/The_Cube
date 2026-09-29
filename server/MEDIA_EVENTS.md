@@ -1,14 +1,15 @@
 # Media events
 
-Use one backend worker and one voice process per Cube identity. No new runtime
-dependencies or service-unit changes are required.
+Use one backend worker and one voice process per Cube identity. See [backend setup](../docs/SETUP.md#backend) for runtime dependencies and
+[deployment](deploy/README.md) for the service unit.
 
 ## Configure webhooks
 
 Use your reachable backend base URL, for example `http://backend.example:8765/webhooks/radarr` and `/webhooks/sonarr`. Configure name resolution/routing from the Arr container network; container-local `localhost` is not a backend on another host. Keep these endpoints on a trusted network, with TLS or a private encrypted network across untrusted links.
 
 The installed Webhook providers both support advanced custom **Headers**. Create
-a separate event-only secret, never reuse an Overseerr/Radarr/Sonarr API key.
+a separate Cube token; never reuse an Overseerr/Radarr/Sonarr API key. This
+token also authenticates Cube controls and music routes; see [security](../SECURITY.md).
 On the server, generate it once without printing it:
 
 ```sh
@@ -60,7 +61,7 @@ Primary sources:
 - [Radarr payload builders](https://github.com/Radarr/Radarr/blob/v6.3.0.10514/src/NzbDrone.Core/Notifications/Webhook/WebhookBase.cs)
 - [Sonarr payload builders](https://github.com/Sonarr/Sonarr/blob/v4.0.19.2979/src/NzbDrone.Core/Notifications/Webhook/WebhookBase.cs)
 
-## Ownership and persistence
+## Stored requests and events
 
 SQLite lives at `~/.local/state/cube/media-events.sqlite3` under the backend user,
 with owner-only database permissions. Back it up with the service stopped; do
@@ -72,7 +73,7 @@ The server writes an intent before the Overseerr POST and activates it only
 after verified success. An early webhook can be retained during that POST but
 cannot be delivered before activation. Unverified attempts remain inactive;
 a new attempt makes their stale events ineligible for delivery. No unrelated media is announced.
-Future TV callers must register individual `SxxExx` requests; there is no TV
+TV event tracking requires individual `SxxExx` requests; there is no TV
 conversation or whole-series readiness claim in this implementation.
 
 Each request generation gets at most one start and one ready notification,
@@ -100,8 +101,7 @@ GET and validation never mark anything delivered.
 
 The Pi sends `X-Cube-Client-ID` on voice and event requests: hostname by default,
 override with `CUBE_CLIENT_ID`. Keep it stable and unique. Older clients that
-omit it are tracked by their direct IP. Existing voice/TTS endpoints remain
-trusted-network APIs.
+omit it are tracked by their direct IP. See [security](../SECURITY.md) for voice/TTS endpoint restrictions.
 
 The network worker holds one notification while the main audio loop is busy;
 it does not play speech or make further polls until that item is handled.
@@ -109,8 +109,12 @@ Listening, command processing, follow-up and speech finish before notification
 playback. The main loop validates the event before synthesis and again immediately
 before playback, dropping cancelled/obsolete events and deferring speech if
 validation is unavailable. Idle playback uses existing `speech` animation messages, discards
-microphone buffers twice, resets the wake model and returns to idle. The renderer,
-wake thresholds, speaker controls and light controls are unchanged.
+microphone buffers twice, resets the wake model and returns to idle.
+
+**Documentation discrepancy:** this buffer-discard and wake-reset description
+conflicts with the continuous capture and notification barge-in described in
+[voice lifecycle](../docs/VOICE_BARGE_IN.md). Confirm that behavior separately
+before relying on these cleanup details.
 
 Only successful Kokoro or Piper playback is acknowledged, after microphone
 cleanup. An acknowledgement is idempotent: if its response is lost, the worker
@@ -166,7 +170,7 @@ systemctl is-active cube-voice.service
 
 Do not restart the renderer for these changes. Use Test in both Arr UIs after
 backend restart. Verify wake-word, year clarification and actual playback on the
-Pi after deployment. An explicit download command can now submit immediately;
+Pi after deployment. An explicit download command submits immediately;
 do not use it as a read-only search test.
 
 Offline tests require no downloads or hardware:
@@ -180,4 +184,4 @@ PYTHONPATH=client/app client/app/.venv/bin/python -m unittest discover -s tests/
 `scripts/check_media.py` performs read-only service status/search/detail calls,
 silent voice uploads and in-memory TTS synthesis. It does not submit a media
 request or play audio. The live service requires a restart to load edited code;
-a fresh-process smoke check alone is not deployment verification.
+a check in a separate process does not verify the running service.

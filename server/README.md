@@ -1,8 +1,8 @@
 # Backend
 
-FastAPI entrypoint `server.py` composes voice processing, integrations and media state. Run one worker on a trusted interface. [Setup](../docs/SETUP.md) covers the environment and assets; [deployment](deploy/README.md) covers systemd.
+The FastAPI entrypoint `server.py` connects voice processing, integrations and media state. Run one worker on a trusted interface. [Setup](../docs/SETUP.md) covers the environment and assets; [deployment](deploy/README.md) covers systemd.
 
-## Ownership
+## Code layout
 
 - `core/`: HTTP contracts, cancellation, STT selection, deterministic/AI routing, per-client history, tool validation and execution.
 - `features/`: Cube controls, lighting/plugs, media requests/events and Spotify `MusicController`.
@@ -10,7 +10,7 @@ FastAPI entrypoint `server.py` composes voice processing, integrations and media
 - `speech/` and `tts/`: local CPU inference fallbacks.
 - `scripts/`: explicit model setup and read-only diagnostics; these are not startup hooks.
 
-Tool execution stays on the backend; Pi hardware effects travel through its authenticated control channel. Music commands are deterministic and excluded from AI-visible tools. A successful external acknowledgment is not proof of physical completion, and uncertain mutations are not retried. The backend uses its own canonical tool reply after execution; the AI node's optional `respond` contract remains independently tested.
+The backend executes tools and sends hardware commands to the Pi through an authenticated control channel. Music commands are deterministic and excluded from AI-visible tools. A successful external acknowledgment is not proof of physical completion, and commands with an uncertain outcome are not retried. The backend uses its own tool reply after execution; the AI node's optional `respond` contract remains independently tested.
 
 ## Configuration and operation
 
@@ -26,7 +26,7 @@ This diagnostic only reads device state. Other integration CLIs can change devic
 
 ## References
 
-- [Architecture and HTTP ownership](../docs/ARCHITECTURE.md)
+- [Architecture and HTTP routes](../docs/ARCHITECTURE.md)
 - [Voice catalog](../docs/VOICE_CATALOG.md)
 - [Movie commands and cancellation](OVERSEERR.md)
 - [Media events and authentication](MEDIA_EVENTS.md)

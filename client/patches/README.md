@@ -4,4 +4,4 @@
 
 The modification cancels queued DMA transfers before disabling the RP1 PIO state machine, preserving shutdown ordering. It is supplied under the upstream **GPL-2.0-or-later** terms; see [COPYING](COPYING). Upstream author/copyright notices remain in the patched source. Cube's root MIT license does not replace those terms.
 
-`client/native/cube-display/prepare-matrix.py` exports the pinned dependency into an ignored build directory, applies this patch and verifies its reverse dry-run before building. It never modifies the submodule checkout. No compiled binary is included in this source release.
+`client/native/cube-display/prepare-matrix.py` exports the pinned dependency into an ignored build directory, applies this patch and verifies its reverse dry-run before building. It never modifies the submodule checkout. Compiled binaries are not included.

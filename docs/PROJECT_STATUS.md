@@ -1,16 +1,12 @@
 # Project status and validation
 
-This repository presents Cube's finished source architecture: voice interaction and barge-in, native display apps, deterministic controls, smart-home/media integrations and Spotify control/display. Hardware and accounts still require deliberate provisioning.
+Cube includes voice interaction and barge-in, display apps, device controls, smart-home/media integrations and Spotify control and display. Running it requires your own hardware, accounts and configuration; follow [setup](SETUP.md).
 
-## Source release scope
-
-The public repository has fresh Git history and includes source, tests, configuration examples, deployment templates, original generated animation samples and a pinned matrix dependency. It excludes custom wake-model output, speech/LLM weights, Soloist binaries, third-party artwork with unresolved rights, private configuration, recordings, logs, caches and runtime state.
-
-A normal clone can run the hardware-free tests without private assets. A real voice deployment needs a compatible [user-provided wake model](../client/assets/models/README.md), [Piper voice](../client/assets/voices/README.md), backend speech assets and hardware configuration. The AI node is optional. Follow [setup](SETUP.md).
+The repository includes source, tests, configuration examples, deployment templates, original animation runtime files and a pinned matrix dependency. It does not include wake, speech or LLM weights, Soloist binaries, private configuration, recordings, logs, caches or runtime state. Animation sources and their attribution are described in [Pi assets](../client/assets/README.md) and [third-party notices](../THIRD_PARTY_NOTICES.md). The cat and alien previews have unresolved provenance noted there; their inclusion does not establish redistribution rights.
 
 ## Automated validation
 
-Release validation uses separate Python 3.13 CPU environments described in [tests](../tests/README.md). Production backend/AI environments remain separate. Native unit tests compile an inert matrix facade and do not initialize HUB75 hardware.
+The recorded test run used separate Python 3.13 CPU environments described in [tests](../tests/README.md). These are separate from production backend and AI environments. The counts below describe that run, not a fresh test of every checkout. Native unit tests compile an inert matrix facade and do not initialize HUB75 hardware.
 
 | Suite | Tests run | Passed | Skipped | Failures / errors |
 | --- | ---: | ---: | ---: | ---: |
@@ -20,12 +16,12 @@ Release validation uses separate Python 3.13 CPU environments described in [test
 | Integration | 25 | 25 | 0 | 0 / 0 |
 | Total | 872 | 870 | 2 | 0 / 0 |
 
-The two skipped client tests explicitly require an isolated PipeWire instance. They are opt-in, separate from normal unit tests. Validation also covers the pinned native candidate build, generated voice catalog, local documentation targets, whitespace, privacy review and redacted credential scans. Build warnings in upstream headers are retained rather than suppressed.
+The two skipped client tests explicitly require an isolated PipeWire instance. They are opt-in, separate from normal unit tests. The recorded checks also covered the pinned native candidate build, generated voice catalog, local documentation targets, whitespace, privacy review and redacted credential scans. The native build reported warnings in upstream headers.
 
-## Limits and manual review
+## What still needs hardware or live services
 
 CPU tests do not certify Pi microphone/speaker behavior, ReSpeaker echo cancellation, Bluetooth, physical panel timing, GPU inference/cancellation, cloud devices or live Spotify/media accounts. Windows/WSL scripts need review/testing on their target host. Repository validation does not deploy or restart anything.
 
-Before deploying, follow the supervised checks in [hardware](HARDWARE.md), [voice](VOICE_BARGE_IN.md), [display](DISPLAY_ARCHITECTURE.md), and [Spotify](SPOTIFY.md). Use a trusted network; inference endpoints are not a general internet-facing authenticated API.
+Before deploying, follow the checks in [hardware](HARDWARE.md), [voice](VOICE_BARGE_IN.md), [display](DISPLAY_ARCHITECTURE.md), and [Spotify](SPOTIFY.md), and review [network security](../SECURITY.md).
 
-Before publishing the source, review README rendering, any added device photo/video, the [third-party inventory](../THIRD_PARTY_NOTICES.md), GitHub description/topics and private vulnerability reporting. Do not attach private configuration or runtime logs. Adding excluded assets or distributing combined binaries requires its own review; neither is part of this source release.
+Adding model weights, other third-party assets or combined binaries requires a separate license and redistribution review. See the [third-party inventory](../THIRD_PARTY_NOTICES.md).

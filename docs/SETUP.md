@@ -2,7 +2,7 @@
 
 Run commands from the repository root unless stated otherwise. Choose only the services you need. Use a trusted LAN or private encrypted network; do not forward the HTTP ports to the internet.
 
-## Clone and test first
+## Clone and test
 
 ```sh
 git clone --recurse-submodules YOUR_PUBLIC_REPOSITORY_URL cube-public
@@ -13,7 +13,7 @@ If already cloned, run `git submodule update --init --recursive`. The matrix dep
 
 ## Backend
 
-Use Python 3.12 for the recorded production environment. Install your OS's Python venv support, libsndfile and eSpeak NG packages. On Debian/Ubuntu these include `python3-venv libsndfile1 espeak-ng`.
+The recorded production environment uses Python 3.12. Install your OS's Python venv support, libsndfile and eSpeak NG packages. On Debian/Ubuntu these include `python3-venv libsndfile1 espeak-ng`.
 
 ```sh
 python3.12 -m venv server/.venv
@@ -31,7 +31,7 @@ cd server
 .venv/bin/uvicorn server:app --host 127.0.0.1 --port 8765 --workers 1
 ```
 
-Bind to a trusted interface for Pi access. One worker is required: control sessions, conversation state and music command receipts are process-local. `/health` is a readiness aid, not proof of successful model inference. Missing Kokoro leaves TTS unavailable while other routes remain; failure to load local Whisper can prevent backend startup.
+Bind to a trusted interface for Pi access. Use one worker: control sessions, conversation state and music command receipts live in that process. `/health` is a readiness aid, not proof of successful model inference. Missing Kokoro leaves TTS unavailable while other routes remain; failure to load local Whisper can prevent backend startup.
 
 ## Pi client
 
@@ -46,13 +46,13 @@ make -C client/native/cube-display -j2
 
 The build produces a candidate only. See [Pi deployment](../client/deploy/README.md) before installing or starting it. Never run two renderers against the panel.
 
-The public tree includes no wake model or speech weights. Supply a compatible openWakeWord ONNX at `client/assets/models/hey_cube.onnx`, or set `CUBE_WAKE_MODEL_PATH`. Provision its supporting embedding/melspectrogram assets separately using upstream guidance. Read [wake provisioning](../client/assets/models/README.md) for prediction-name/threshold considerations; Cube does not retrain or calibrate a model automatically. The custom training output is not redistributed.
+Wake models and speech weights are not included. Supply a compatible openWakeWord ONNX at `client/assets/models/hey_cube.onnx`, or set `CUBE_WAKE_MODEL_PATH`. Provision its supporting embedding/melspectrogram assets separately using upstream guidance. Read [wake provisioning](../client/assets/models/README.md) for prediction-name/threshold considerations; Cube does not retrain or calibrate a model automatically.
 
-For local Piper fallback, obtain **both** `en_US-lessac-medium.onnx` and its matching `.onnx.json`, review the voice model card, and place them in `client/assets/voices/`, or configure `CUBE_PIPER_VOICE_PATH` with the matching JSON alongside the weights. See [voice provisioning](../client/assets/voices/README.md). All these files remain ignored. Missing wake weights prevent normal voice startup; missing Piper assets prevent fallback speech. Normal tests mock model loading and require no weights.
+For local Piper fallback, obtain **both** `en_US-lessac-medium.onnx` and its matching `.onnx.json`, review the voice model card, and place them in `client/assets/voices/`, or configure `CUBE_PIPER_VOICE_PATH` with the matching JSON alongside the weights. See [voice provisioning](../client/assets/voices/README.md). All these files remain ignored. Missing wake weights prevent normal voice startup; missing Piper assets prevent fallback speech. The [hardware-free tests](../tests/README.md) mock model loading.
 
 Copy `config/examples/client.env.example` to `~/.config/cube/client.env` and edit the backend endpoints, microphone and weather location. Replace `YOUR_LATITUDE`, `YOUR_LONGITUDE` and `YOUR_TIMEZONE` with your chosen forecast location; unedited placeholders leave weather unavailable. Source defaults are a documented public city reference, not private location configuration. Set `CUBE_CLIENT_ID` consistently on the Pi and backend Spotify configuration. The default hostname `server` is a development convention; a fresh clone does not supply DNS for it.
 
-The audio graph is required even without Spotify: speech targets `cube.assistant`. Provision the user PipeWire session and `cube-audio` services before launching voice. Pair/select the physical speaker separately; review [Spotify/audio ownership](SPOTIFY.md) and [Pi deployment](../client/deploy/README.md).
+The audio graph is required even without Spotify: speech targets `cube.assistant`. Provision the user PipeWire session and `cube-audio` services before launching voice. Pair/select the physical speaker separately; review [Spotify and audio routing](SPOTIFY.md) and [Pi deployment](../client/deploy/README.md).
 
 ## Private configuration and optional integrations
 
@@ -60,7 +60,7 @@ Create `~/.config/cube` with mode 0700. Keep configuration/token files mode 0600
 
 | Feature | Service/user location | Required configuration |
 | --- | --- | --- |
-| Govee | Backend `~/.config/cube/` | `govee_api_key` and `govee.json`; device/group mapping example is provided |
+| Govee | Backend `~/.config/cube/` | `govee_api_key` and `~/.config/cube/govee.json`; device/group mapping example is provided |
 | Tuya / Smart Life | Backend `~/.config/cube/tuya.env` | Cloud region endpoint, Access ID/Secret, optional lamp/mirror/mushroom device IDs |
 | Overseerr | Backend `~/.config/cube/overseerr.env` | `OVERSEERR_URL`, `OVERSEERR_API_KEY` |
 | Radarr / Sonarr | Backend `~/.config/cube/radarr.env`, `sonarr.env` | Service URL/API key; needed for media verification and cancellation |
@@ -76,4 +76,4 @@ Follow [AI-node setup](../ai_node/README.md) for its separate GPU environment an
 
 ## Deployment templates
 
-Render templates for the actual service account/UID and checkout using [deployment layout](DEPLOYMENT_LAYOUT.md). The renderer requires `CUBE_DISPLAY_USER`, supplied by the rendered unit. Private Govee mappings use `~/.config/cube/govee.json`; the example is not a working device configuration. Services do not discover or install credentials, model assets, DNS names or hardware routes automatically. Rendering and repository checks never install or restart services.
+Render templates for the actual service account/UID and checkout using [deployment layout](DEPLOYMENT_LAYOUT.md). The renderer requires `CUBE_DISPLAY_USER`, supplied by the rendered unit. Review the generated units before installation. Rendering templates and running repository checks do not install or restart services.

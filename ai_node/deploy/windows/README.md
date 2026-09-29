@@ -6,4 +6,4 @@ Copy `cube-settings.example.psd1` to `$env:USERPROFILE\CubeScripts\cube-settings
 
 Inspect both scripts and run them manually before installing tasks. `cube-ai-startup.ps1` starts the LLM service/model and WSL inference. **`cube-gaming-mode.ps1` intentionally stops model/service work and terminates WSL** to free resources; it can affect other workloads in that distribution. It is not a diagnostic command.
 
-`install-cube-tasks.ps1` requires the settings file, copies the launchers into `CubeScripts`, and registers scheduled tasks. Run it only when those persistent changes are intended. Scripts do not contain a machine address, personal path or chosen model. No task registration or process restart is part of repository validation.
+`install-cube-tasks.ps1` requires the settings file, copies the launchers into `CubeScripts`, and registers scheduled tasks. Run it only when those persistent changes are intended. Repository checks do not register tasks or restart processes.

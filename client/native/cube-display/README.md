@@ -1,8 +1,8 @@
 # Cube Display — Raspberry Pi 5 renderer
 
-This component is the sole production owner of the 64×64 HUB75 panel. See
+This C++ process drives the 64×64 HUB75 panel. See
 [display architecture](../../../docs/DISPLAY_ARCHITECTURE.md) for the frame,
-app, overlay, composition, and transition contracts.
+apps, overlays, composition and transitions.
 
 ## Candidate build
 
@@ -29,8 +29,8 @@ bounded header plus exactly 12,288 RGB24 bytes, with at most one image accepted
 per frame. See [music protocol](../../../docs/SPOTIFY.md).
 Assistant
 states `idle`, `wake`, `listening`, `thinking`, `followup`, and `speech <0..1>`
-are send only. Wake maps to the listening presentation marker; state ownership
-and stale interaction rejection remain in the Pi Coordinator.
+are send only. Wake maps to the listening presentation marker; the Pi Coordinator tracks interaction state
+and rejects stale updates.
 The overlay uses one gray bottom-row line: it is absent at idle, reveals
 center-out for listening, has a traveling pure-white highlight for thinking,
 responds to speech level, and remains steady during follow-up.
@@ -51,10 +51,9 @@ traverses the rendering path.
 Text uses 1–5 code points from `0–9`, `A–Z`, `:`, `%`, `!`, and `°`; invalid
 input is rejected. Masks and icons are hardware independent. Explicit content
 is solid white on black and owns the complete frame while active. Volume uses
-the same two-second Pi-side text window and refresh behavior. The preserved
+the same two-second Pi-side text window and refresh behavior. The
 900 ms dissolve forms, morphs, and releases content with spatial delays and
-interruption continuity. It is separate from the removed Perlin and palette
-animation.
+interruption continuity.
 
 The standard-library manual helper can inspect the protocol; it imports only
 the canonical socket address from the client display transport:
@@ -74,6 +73,6 @@ make -C client/native/cube-display -j2
 ```
 
 These tests use an inert matrix facade and never initialize HUB75 hardware.
-See [project status](../../../docs/PROJECT_STATUS.md) for release validation;
+See [project status](../../../docs/PROJECT_STATUS.md) for testing limits;
 quantitative panel timing and RP1 behavior require physical checks. No deployment or service restart is
 part of the candidate build.

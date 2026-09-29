@@ -2,7 +2,7 @@
 
 Start with [architecture](docs/ARCHITECTURE.md) and [tests](tests/README.md). Keep changes small and describe the concrete problem, resulting behavior, validation and hardware limits.
 
-Preserve independent service environments, HTTP contracts, backend-owned tool execution/state, Pi-owned audio/hardware and Coordinator interaction ownership. Use existing feature adapters rather than adding a second route to the same device. Do not combine a refactor with new functionality without explaining the boundary.
+Keep service environments separate and preserve the HTTP contracts. The backend executes tools and stores state; the Pi controls audio and hardware; the Coordinator manages voice interactions. Use existing feature adapters rather than adding a second route to the same device. Do not combine a refactor with new functionality without explaining how the changes relate.
 
 Run the affected component tests, generated-catalog check and cross-service tests when contracts change. Tests must not require private infrastructure or load/download models implicitly. Native builds create a candidate; they must not start another panel renderer or replace installed binaries.
 

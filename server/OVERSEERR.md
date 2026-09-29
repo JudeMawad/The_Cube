@@ -1,7 +1,7 @@
 # Movie conversations through Cube
 
-`~/.config/cube/overseerr.env` remains the only Overseerr configuration file.
-Assignments are parsed as data, never sourced. Requests use the existing
+`~/.config/cube/overseerr.env` is the Overseerr configuration file.
+Assignments are parsed as data, never sourced. Requests use
 `/api/v1/request` POST with a TMDB ID. Confirmed cancellation also uses narrowly
 scoped Radarr operations; Sonarr remains read-only.
 
@@ -75,13 +75,17 @@ After ten minutes or several hours, say **“Hey Cube, has it started yet?”**,
 “Hey Cube, is it ready?”, or “Hey Cube, any update?” Cube uses its remembered
 movie and names it in the answer. Once the short listening window ends, the wake
 word is required again. Speech that starts inside that window may finish normally.
-There is no interruption during playback in this release.
 
-An additive `client_movie_context` SQLite table stores a reference per Cube ID.
+**Documentation discrepancy:** this guide previously described playback as
+uninterruptible, while the [voice guide](../docs/VOICE_BARGE_IN.md) describes
+wake-word barge-in during playback. Movie and notification playback need a
+separate behavior check to resolve that conflict.
+
+The `client_movie_context` SQLite table stores a reference per Cube ID.
 On upgrade, a missing reference falls back to that Cube's latest confirmed movie
 request. “Forget that movie” writes an explicit cleared reference, preventing
 that fallback. “What was the last movie I requested?” explicitly consults history.
-Ambiguous searches do not overwrite the reference. Durable memory can never
+Ambiguous searches do not overwrite the reference. Remembering a movie does not
 reactivate an expired confirmation.
 
 Status reads current Overseerr availability/request state and stored start/import
@@ -97,7 +101,7 @@ The Pi sends stable `X-Cube-Client-ID` headers (hostname by default; override wi
 Cube identity, not an identified speaker. Run one backend worker and one voice
 process per ID. Existing voice/TTS endpoints remain trusted-network APIs.
 
-`/voice` preserves existing fields and adds `listen_for_seconds`,
+`/voice` returns `listen_for_seconds`,
 `context_expires_in` (temporary clarification only), and `timings` in seconds.
 Legacy `follow_up` and `expires_in` remain on clarification responses. New Pi
 clients use the explicit listening field; older-server fallback is capped at ten
@@ -120,7 +124,8 @@ again. Tracking and notification history retain their existing ownership rules.
 ## Validation and deployment
 
 See [media events](MEDIA_EVENTS.md) for webhooks, ownership, and delivery limits.
-Run backend and client suites from their respective directories:
+Run the backend suite from the repository root; the [test guide](../tests/README.md)
+also covers the client suite:
 
 ```sh
 # From the repository root
@@ -135,7 +140,7 @@ the transactional migration adds cancellation state and request generations,
 and rebuilds the notification uniqueness constraint while preserving IDs,
 receipts, delivery state, and history.
 Restart `cube-server.service`, run the read-only smoke check, update the Pi files,
-and restart `cube-voice.service`. The renderer and service definitions are unchanged.
+and restart `cube-voice.service`. These updates do not require restarting the renderer.
 Keep a SQLite backup and the previous source outside the repo. After a
 cancellation, do not run an older backend against the migrated database: older
 code cannot enforce cancellation or generation filters and could announce stale
@@ -145,5 +150,5 @@ removal. Live cancellation testing requires a deliberately disposable request.
 
 After deployment, check real microphone pickup, short follow-ups, later wake-word
 status questions, and notifications on the Pi. Compare identical recordings
-before/after and report median/p95 response delay; synthesized-input network
+before and after deployment and record median/p95 response delay; synthesized-input network
 measurements do not replace physical microphone and playback checks.
